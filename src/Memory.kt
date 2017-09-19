@@ -1,4 +1,4 @@
-package kotNES.memory
+package kotNES
 
 /**
  * $0000-0800 - Internal RAM, 2KB chip in the NES

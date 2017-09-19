@@ -1,3 +1,6 @@
+package kotNES
+
+import toUnsignedInt
 import java.io.FileInputStream
 
 class Cartridge(filePath: String) {
@@ -25,9 +28,9 @@ class Cartridge(filePath: String) {
         if (java.nio.ByteBuffer.wrap(data.copyOfRange(0,4)).order(java.nio.ByteOrder.LITTLE_ENDIAN).int != MAGIC_HEADER)
             throw InvalidROM("Invalid ROM Signature")
 
-        prgROMSize = data[4].toInt() and 0xff
-        chrROMSize = data[5].toInt() and 0xff
-        prgRAMSize = data[8].toInt()
+        prgROMSize = data[4].toUnsignedInt() and 0xff
+        chrROMSize = data[5].toUnsignedInt() and 0xff
+        prgRAMSize = data[8].toUnsignedInt()
 
         flag6 = data[6].toInt()
         flag7 = data[7].toInt()
@@ -40,6 +43,15 @@ class Cartridge(filePath: String) {
         prgROM = data.copyOfRange(prgOffset, prgOffset + prgROMSize)
 
         if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset + prgROMSize + chrROMSize)
+    }
+
+    fun readPRGRom(address: Int): Byte {
+        return prgROM[address]
+    }
+
+    fun readCHRRom(address: Int): Byte {
+        return if (chrROMSize != 0) chrROM[address]
+        else 0
     }
 
     override fun toString(): String {
