@@ -51,12 +51,13 @@ class Cartridge(filePath: String) {
 
     fun readCHRRom(address: Int): Byte {
         return if (chrROMSize != 0) chrROM[address]
-        else 0
+        else throw NoCHRRomException("There's no CHR ROM")
     }
 
     override fun toString(): String {
-        return "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: ${mapper}"
+        return "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: $mapper"
     }
 }
 
 class InvalidROM(override var message: String) : Exception()
+class NoCHRRomException(override var message: String) : Exception()

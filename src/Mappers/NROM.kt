@@ -1,4 +1,4 @@
-package kotNES
+package kotNES.mapper
 
 import kotNES.Cartridge
 
