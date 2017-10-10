@@ -81,6 +81,16 @@ class Opcodes {
         opcode[0xCA] = dex(AddressMode.Implied, implied())
         opcode[0x88] = dey(AddressMode.Implied, implied())
 
+        /* EOR Opcodes */
+        opcode[0x49] = eor(AddressMode.Immediate, immediate())
+        opcode[0x45] = eor(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x55] = eor(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x4D] = eor(AddressMode.Absolute, absolute())
+        opcode[0x5D] = eor(AddressMode.AbsoluteX, absoluteX())
+        opcode[0x59] = eor(AddressMode.AbsoluteY, absoluteY())
+        opcode[0x41] = eor(AddressMode.IndirectX, indirectX())
+        opcode[0x51] = eor(AddressMode.IndirectY, indirectY())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -265,6 +275,14 @@ class Opcodes {
         it.apply {
             it.registers.Y--
             it.statusFlags.setZn(it.registers.Y)
+        }
+    }
+
+    private fun eor(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+            it.registers.A = ((it.registers.A.toUnsignedInt() xor data.toUnsignedInt()) and 0xFF).toSignedByte()
         }
     }
 
