@@ -41,6 +41,10 @@ class Opcodes {
         opcode[0x0E] = asl(AddressMode.Absolute, absolute())
         opcode[0x1E] = asl(AddressMode.AbsoluteX, absoluteX())
 
+        /* BIT Opcodes */
+        opcode[0x24] = and(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x2C] = and(AddressMode.Absolute, absolute())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -136,6 +140,17 @@ class Opcodes {
 
                 statusFlags.SetZn((data.toUnsignedInt() shl 1).toSignedByte())
             }
+        }
+    }
+
+    private fun bit(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+
+            it.statusFlags.Negative = data.isBitSet(7)
+            it.statusFlags.Overflow = data.isBitSet(6)
+            it.statusFlags.Zero = (data.toUnsignedInt() and it.registers.A.toUnsignedInt()) == 0
         }
     }
 
