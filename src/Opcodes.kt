@@ -14,9 +14,9 @@ class Opcodes {
         Accumulator,
         Immediate,
         Implied,
-        IndexedIndirect,
         Indirect,
-        IndirectIndexed,
+        IndirectX,
+        IndirectY,
         Relative,
         ZeroPage,
         ZeroPageX,
@@ -24,6 +24,16 @@ class Opcodes {
     }
 
     init {
+        /* AND Opcodes */
+        opcode[0x29] = and(AddressMode.Immediate, immediate())
+        opcode[0x25] = and(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x35] = and(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x2D] = and(AddressMode.Absolute, absolute())
+        opcode[0x3D] = and(AddressMode.AbsoluteX, absoluteX())
+        opcode[0x39] = and(AddressMode.AbsoluteY, absoluteY())
+        opcode[0x21] = and(AddressMode.IndirectX, indirectX())
+        opcode[0x31] = and(AddressMode.IndirectY, indirectY())
+
         /* ASL Opcodes */
         opcode[0x0A] = asl(AddressMode.Accumulator, accumulator())
         opcode[0x06] = asl(AddressMode.ZeroPage, zeroPageAdr())
@@ -52,6 +62,8 @@ class Opcodes {
         opcode[0x6E] = ror(AddressMode.Absolute, absolute())
         opcode[0x7E] = ror(AddressMode.AbsoluteX, absoluteX())
     }
+
+    /* Address mode memory address */
 
     private fun absolute(): (CPU) -> Int = {
         it.memory.read16(it.registers.PC + 1)
@@ -95,6 +107,16 @@ class Opcodes {
 
     private fun zeroPageYAdr(): (CPU) -> Int = {
         ((it.memory.read(it.registers.PC + 1).toUnsignedInt() + it.registers.Y) and 0xFF)
+    }
+
+    /* Opcode methods */
+
+    private fun and(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            it.registers.A = (it.registers.A.toUnsignedInt() and it.memory.read(address).toUnsignedInt()).toSignedByte()
+            statusFlags.SetZn(registers.A)
+        }
     }
 
     private fun asl(mode: AddressMode, address: (CPU) -> Int) = Opcode {
