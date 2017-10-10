@@ -51,6 +51,16 @@ class Opcodes {
         opcode[0x58] = cli(AddressMode.Implied, implied())
         opcode[0xB8] = clv(AddressMode.Implied, implied())
 
+        /* CMP Opcodes */
+        opcode[0xC9] = cmp(AddressMode.Immediate, immediate())
+        opcode[0xC5] = cmp(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xD5] = cmp(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xCD] = cmp(AddressMode.Absolute, absolute())
+        opcode[0xDD] = cmp(AddressMode.AbsoluteX, absoluteX())
+        opcode[0xD9] = cmp(AddressMode.AbsoluteY, absoluteY())
+        opcode[0xC1] = cmp(AddressMode.IndirectX, indirectX())
+        opcode[0xD1] = cmp(AddressMode.IndirectY, indirectY())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -181,6 +191,16 @@ class Opcodes {
     private fun clv(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             it.statusFlags.Overflow = false
+        }
+    }
+
+    private fun cmp(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+
+            it.statusFlags.Carry = it.registers.A >= data
+            it.statusFlags.SetZn((it.registers.A - data).toSignedByte())
         }
     }
 
