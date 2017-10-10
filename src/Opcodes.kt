@@ -24,12 +24,19 @@ class Opcodes {
     }
 
     init {
+        /* ASL Opcodes */
+        opcode[0x0A] = asl(AddressMode.Accumulator, accumulator())
+        opcode[0x06] = asl(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x16] = asl(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x0E] = asl(AddressMode.Absolute, absolute())
+        opcode[0x1E] = asl(AddressMode.AbsoluteX, absoluteX())
+
         /* LSR Opcodes */
-        opcode[0x4A]
-        opcode[0x46]
-        opcode[0x56]
-        opcode[0x4E]
-        opcode[0x5E]
+        opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
+        opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x56] = lsr(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x4E] = lsr(AddressMode.Absolute, absolute())
+        opcode[0x5E] = lsr(AddressMode.AbsoluteX, absoluteX())
 
         /* ROL Opcodes */
         opcode[0x2A] = rol(AddressMode.Accumulator, accumulator())
@@ -66,6 +73,46 @@ class Opcodes {
 
     private fun zeroPageYAdr(): (CPU) -> Int = {
         ((it.memory.read(it.registers.PC + 1).toUnsignedInt() + it.registers.Y) and 0xFF)
+    }
+
+    private fun asl(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+
+            if (mode == AddressMode.Accumulator) {
+                statusFlags.Carry = registers.A.isBitSet(7)
+                registers.A = (registers.A.toUnsignedInt() shl 1).toSignedByte()
+
+                statusFlags.SetZn(registers.A)
+            } else {
+                var data = memory.read(address)
+                statusFlags.Carry = data.isBitSet(7)
+
+                memory.write(address, (data.toUnsignedInt() shl 1).toSignedByte())
+
+                statusFlags.SetZn((data.toUnsignedInt() shl 1).toSignedByte())
+            }
+        }
+    }
+
+    private fun lsr(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+
+            if (mode == AddressMode.Accumulator) {
+                statusFlags.Carry = (registers.A.toUnsignedInt() and 1) == 1
+                registers.A = (registers.A.toUnsignedInt() shr 1).toSignedByte()
+
+                statusFlags.SetZn(registers.A)
+            } else {
+                var data = memory.read(address)
+                statusFlags.Carry = (data.toUnsignedInt() and 1) == 1
+
+                memory.write(address, (data.toUnsignedInt() shr 1).toSignedByte())
+
+                statusFlags.SetZn((data.toUnsignedInt() shr 1).toSignedByte())
+            }
+        }
     }
 
     private fun rol(mode: AddressMode, address: (CPU) -> Int) = Opcode {
@@ -106,26 +153,6 @@ class Opcodes {
 
                 data = ((data.toUnsignedInt() shr 1) or (if (tempCarry) 0x80 else 0)).toSignedByte()
                 memory.write(address, data)
-
-                statusFlags.SetZn(data)
-            }
-        }
-    }
-
-    private fun lsr(mode: AddressMode, address: (CPU) -> Int) = Opcode {
-        it.apply {
-            var address = address(it)
-
-            if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = (registers.A.toUnsignedInt() and 1) == 1
-                registers.A = (registers.A.toUnsignedInt() shr 1).toSignedByte()
-
-                statusFlags.SetZn(registers.A)
-            } else {
-                var data = memory.read(address)
-                statusFlags.Carry = (data.toUnsignedInt() and 1) == 1
-
-                memory.write(address, (data.toUnsignedInt() shr 1).toSignedByte())
 
                 statusFlags.SetZn(data)
             }
