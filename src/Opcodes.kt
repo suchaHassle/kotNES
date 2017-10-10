@@ -61,7 +61,29 @@ class Opcodes {
         (it.memory.read16(it.registers.PC + 1) + it.registers.X)
     }
 
+    private fun absoluteY(): (CPU) -> Int = {
+        (it.memory.read16(it.registers.PC + 1) + it.registers.Y)
+    }
+
     private fun accumulator(): (CPU) -> Int = { 0 }
+
+    private fun indirectX(): (CPU) -> Int = { it.memory.read16wrap(indirectXAdr()(it)) }
+
+    private fun indirectY(): (CPU) -> Int = { it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y }
+
+    private fun indirectXAdr(): (CPU) -> Int = {
+        (it.memory.read(it.registers.PC + 1) + it.registers.X) and 0xFF
+    }
+
+    private fun indirectYAdr(): (CPU) -> Int = {
+        it.memory.read(it.registers.PC + 1).toUnsignedInt()
+    }
+
+    private fun immediate(): (CPU) -> Int = { it.registers.PC + 1 }
+
+    private fun implied(): (CPU) -> Int = { 0 }
+
+    private fun relative(): (CPU) -> Int = { it.registers.PC + it.memory.read(it.registers.PC + 1) + 2 }
 
     private fun zeroPageAdr(): (CPU) -> Int = {
         it.memory.read(it.registers.PC + 1).toUnsignedInt()

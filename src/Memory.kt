@@ -27,7 +27,17 @@ class Memory(cartridge: Cartridge) {
     fun read16(address: Int): Int {
         val lo = read(address).toUnsignedInt()
         val hi = read(address + 1).toUnsignedInt()
-        return (hi shr 8) or lo
+        return (hi shl 8) or lo
+    }
+
+    fun read16wrap(address: Int): Int {
+        if (address and 0xFF == 0xFF) {
+            val lo = read(address).toUnsignedInt()
+            val hi = read(address and 0xFF.inv()).toUnsignedInt()
+
+            return (hi shl 8) or lo
+        }
+        return read16(address)
     }
 
     fun write(address: Int, value: Byte) {
