@@ -23,13 +23,21 @@ class Opcodes {
     }
 
     init {
-
         /* ROL Opcodes */
         opcode[0x2A] = rol(AddressMode.Accumulator, accumulator())
         opcode[0x26] = rol(AddressMode.ZeroPage, zeroPageAdr())
         opcode[0x36] = rol(AddressMode.ZeroPageX, zeroPageXAdr())
-        // TODO: rol $2E, $3E for absolute and absolute X
+        opcode[0x2E] = rol(AddressMode.Absolute, absolute())
+        opcode[0x3E] = rol(AddressMode.AbsoluteX, absoluteX())
 
+    }
+
+    private fun absolute(): (CPU) -> Int = {
+        it.memory.read16(it.registers.PC + 1)
+    }
+
+    private fun absoluteX(): (CPU) -> Int = {
+        (it.memory.read16(it.registers.PC + 1) + it.registers.X)
     }
 
     private fun accumulator(): (CPU) -> Int = { 0 }
@@ -45,7 +53,6 @@ class Opcodes {
     private fun zeroPageYAdr(): (CPU) -> Int = {
         ((it.memory.read(it.registers.PC + 1).toUnsignedInt() + it.registers.Y) and 0xFF)
     }
-
 
     private fun rol(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {

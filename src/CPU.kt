@@ -65,6 +65,7 @@ class CPU(memory: Memory) {
             }
 
             i += instructionSizes[opcode]
+            registers.tick(instructionSizes[opcode])
         }
     }
 
@@ -89,6 +90,10 @@ data class Register (
         S = 0xFD.toSignedByte()
         P = 0
         PC = 0xC000.toSignedShort()
+    }
+
+    fun tick(count: Int) {
+        PC = (PC + count).toSignedShort()
     }
 }
 
