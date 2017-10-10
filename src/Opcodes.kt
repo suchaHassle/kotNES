@@ -42,8 +42,14 @@ class Opcodes {
         opcode[0x1E] = asl(AddressMode.AbsoluteX, absoluteX())
 
         /* BIT Opcodes */
-        opcode[0x24] = and(AddressMode.ZeroPage, zeroPageAdr())
-        opcode[0x2C] = and(AddressMode.Absolute, absolute())
+        opcode[0x24] = bit(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x2C] = bit(AddressMode.Absolute, absolute())
+
+        /* CLC, CLD, CLI, CLV Opcode */
+        opcode[0x18] = clc(AddressMode.Implied, implied())
+        opcode[0xD8] = cld(AddressMode.Implied, implied())
+        opcode[0x58] = cli(AddressMode.Implied, implied())
+        opcode[0xB8] = clv(AddressMode.Implied, implied())
 
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
@@ -151,6 +157,30 @@ class Opcodes {
             it.statusFlags.Negative = data.isBitSet(7)
             it.statusFlags.Overflow = data.isBitSet(6)
             it.statusFlags.Zero = (data.toUnsignedInt() and it.registers.A.toUnsignedInt()) == 0
+        }
+    }
+
+    private fun clc(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.Carry = false
+        }
+    }
+
+    private fun cld(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.DecimalMode = false
+        }
+    }
+
+    private fun cli(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.InterruptDisable = false
+        }
+    }
+
+    private fun clv(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.Overflow = false
         }
     }
 
