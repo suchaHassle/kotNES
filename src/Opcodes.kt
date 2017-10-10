@@ -71,6 +71,12 @@ class Opcodes {
         opcode[0xC4] = cpy(AddressMode.ZeroPage, zeroPageAdr())
         opcode[0xCC] = cpy(AddressMode.Absolute, absolute())
 
+        /* DEC Opcodes */
+        opcode[0xC6] = dec(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xD6] = dec(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xCE] = dec(AddressMode.Absolute, absolute())
+        opcode[0xDE] = dec(AddressMode.AbsoluteX, absoluteX())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -145,7 +151,7 @@ class Opcodes {
         it.apply {
             var address = address(it)
             it.registers.A = (it.registers.A.toUnsignedInt() and it.memory.read(address).toUnsignedInt()).toSignedByte()
-            statusFlags.SetZn(registers.A)
+            statusFlags.setZn(registers.A)
         }
     }
 
@@ -157,14 +163,14 @@ class Opcodes {
                 statusFlags.Carry = registers.A.isBitSet(7)
                 registers.A = (registers.A.toUnsignedInt() shl 1).toSignedByte()
 
-                statusFlags.SetZn(registers.A)
+                statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(7)
 
                 memory.write(address, (data.toUnsignedInt() shl 1).toSignedByte())
 
-                statusFlags.SetZn((data.toUnsignedInt() shl 1).toSignedByte())
+                statusFlags.setZn((data.toUnsignedInt() shl 1).toSignedByte())
             }
         }
     }
@@ -210,7 +216,7 @@ class Opcodes {
             var data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.A >= data
-            it.statusFlags.SetZn((it.registers.A - data).toSignedByte())
+            it.statusFlags.setZn((it.registers.A - data).toSignedByte())
         }
     }
 
@@ -220,7 +226,7 @@ class Opcodes {
             var data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.X >= data
-            it.statusFlags.SetZn((it.registers.X - data).toSignedByte())
+            it.statusFlags.setZn((it.registers.X - data).toSignedByte())
         }
     }
 
@@ -230,7 +236,17 @@ class Opcodes {
             var data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.Y >= data
-            it.statusFlags.SetZn((it.registers.Y - data).toSignedByte())
+            it.statusFlags.setZn((it.registers.Y - data).toSignedByte())
+        }
+    }
+
+    private fun dec(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+            data--
+            it.memory.write(address, data)
+            it.statusFlags.setZn(data)
         }
     }
 
@@ -242,14 +258,14 @@ class Opcodes {
                 statusFlags.Carry = (registers.A.toUnsignedInt() and 1) == 1
                 registers.A = (registers.A.toUnsignedInt() shr 1).toSignedByte()
 
-                statusFlags.SetZn(registers.A)
+                statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = (data.toUnsignedInt() and 1) == 1
 
                 memory.write(address, (data.toUnsignedInt() shr 1).toSignedByte())
 
-                statusFlags.SetZn((data.toUnsignedInt() shr 1).toSignedByte())
+                statusFlags.setZn((data.toUnsignedInt() shr 1).toSignedByte())
             }
         }
     }
@@ -263,7 +279,7 @@ class Opcodes {
                 statusFlags.Carry = registers.A.isBitSet(7)
                 registers.A = ((registers.A.toUnsignedInt() shl 1) or (if (tempCarry) 1 else 0)).toSignedByte()
 
-                statusFlags.SetZn(registers.A)
+                statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(7)
@@ -271,7 +287,7 @@ class Opcodes {
                 data = ((data.toUnsignedInt() shl 1) or (if (tempCarry) 1 else 0)).toSignedByte()
                 memory.write(address, data)
 
-                statusFlags.SetZn(data)
+                statusFlags.setZn(data)
             }
         }
     }
@@ -285,7 +301,7 @@ class Opcodes {
                 statusFlags.Carry = registers.A.isBitSet(0)
                 registers.A = ((registers.A.toUnsignedInt() shr 1) or (if (tempCarry) 0x80 else 0)).toSignedByte()
 
-                statusFlags.SetZn(registers.A)
+                statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(0)
@@ -293,7 +309,7 @@ class Opcodes {
                 data = ((data.toUnsignedInt() shr 1) or (if (tempCarry) 0x80 else 0)).toSignedByte()
                 memory.write(address, data)
 
-                statusFlags.SetZn(data)
+                statusFlags.setZn(data)
             }
         }
     }
