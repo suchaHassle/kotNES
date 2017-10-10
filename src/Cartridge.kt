@@ -39,7 +39,7 @@ class Cartridge(filePath: String) {
         mapper = data[6].toUnsignedInt() shr(4) or (data[7].toUnsignedInt() and 0xF0)
 
         // Loading Prg ROM
-        var prgOffset = if ((flag6 and (1 shl 3)) == 0) 16 + 512 else 16
+        var prgOffset = 16 + if ((flag6 and 0x1) > 0) 512 else 0
         prgROM = data.copyOfRange(prgOffset, prgOffset + prgROMSize)
 
         if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset + prgROMSize + chrROMSize)
