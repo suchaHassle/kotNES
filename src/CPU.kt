@@ -135,7 +135,7 @@ data class StatusFlag (
         Negative = status.isBitSet(7)
     }
 
-    fun SetZn(value: Byte) {
+    fun setZn(value: Byte) {
         Zero = (value.toUnsignedInt() == 0)
         Negative = ((value.toUnsignedInt() shr 7) and 1) == 1
     }
