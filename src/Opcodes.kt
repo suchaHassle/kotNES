@@ -66,6 +66,11 @@ class Opcodes {
         opcode[0xE4] = cpx(AddressMode.ZeroPage, zeroPageAdr())
         opcode[0xEC] = cpx(AddressMode.Absolute, absolute())
 
+        /* CPY Opcodes */
+        opcode[0xC0] = cpy(AddressMode.Immediate, immediate())
+        opcode[0xC4] = cpy(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xCC] = cpy(AddressMode.Absolute, absolute())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -210,6 +215,16 @@ class Opcodes {
     }
 
     private fun cpx(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+
+            it.statusFlags.Carry = it.registers.X >= data
+            it.statusFlags.SetZn((it.registers.X - data).toSignedByte())
+        }
+    }
+
+    private fun cpy(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             var address = address(it)
             var data = it.memory.read(address)
