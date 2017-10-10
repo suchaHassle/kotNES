@@ -91,6 +91,14 @@ class Opcodes {
         opcode[0x41] = eor(AddressMode.IndirectX, indirectX())
         opcode[0x51] = eor(AddressMode.IndirectY, indirectY())
 
+        /* INC, INX, INY Opcodes */
+        opcode[0xE6] = inc(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xF6] = inc(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xEE] = inc(AddressMode.Absolute, absolute())
+        opcode[0xFE] = inc(AddressMode.AbsoluteX, absoluteX())
+        opcode[0xE8] = inx(AddressMode.Implied, implied())
+        opcode[0xC8] = iny(AddressMode.Implied, implied())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -283,6 +291,16 @@ class Opcodes {
             var address = address(it)
             var data = it.memory.read(address)
             it.registers.A = ((it.registers.A.toUnsignedInt() xor data.toUnsignedInt()) and 0xFF).toSignedByte()
+        }
+    }
+
+    private fun inc(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+            var data = it.memory.read(address)
+            data++
+            it.memory.write(address, data)
+            it.statusFlags.setZn(data)
         }
     }
 
