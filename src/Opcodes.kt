@@ -77,6 +77,10 @@ class Opcodes {
         opcode[0xCE] = dec(AddressMode.Absolute, absolute())
         opcode[0xDE] = dec(AddressMode.AbsoluteX, absoluteX())
 
+        /* DEX, DEY Opcodes */
+        opcode[0xCA] = dex(AddressMode.Implied, implied())
+        opcode[0x88] = dey(AddressMode.Implied, implied())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -247,6 +251,34 @@ class Opcodes {
             data--
             it.memory.write(address, data)
             it.statusFlags.setZn(data)
+        }
+    }
+
+    private fun dex(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.X--
+            it.statusFlags.setZn(it.registers.X)
+        }
+    }
+
+    private fun dey(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.Y--
+            it.statusFlags.setZn(it.registers.Y)
+        }
+    }
+
+    private fun inx(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.X++
+            it.statusFlags.setZn(it.registers.X)
+        }
+    }
+
+    private fun iny(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.Y++
+            it.statusFlags.setZn(it.registers.Y)
         }
     }
 
