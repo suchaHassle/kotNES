@@ -24,6 +24,16 @@ class Opcodes {
     }
 
     init {
+        /* ADC Opcodes */
+        opcode[0x69] = adc(AddressMode.Immediate, immediate())
+        opcode[0x65] = adc(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x75] = adc(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x6D] = adc(AddressMode.Absolute, absolute())
+        opcode[0x7D] = adc(AddressMode.AbsoluteX, absoluteX())
+        opcode[0x79] = adc(AddressMode.AbsoluteY, absoluteY())
+        opcode[0x61] = adc(AddressMode.IndirectX, indirectX())
+        opcode[0x71] = adc(AddressMode.IndirectY, indirectY())
+
         /* AND Opcodes */
         opcode[0x29] = and(AddressMode.Immediate, immediate())
         opcode[0x25] = and(AddressMode.ZeroPage, zeroPageAdr())
@@ -237,6 +247,22 @@ class Opcodes {
     }
 
     /* Opcode methods */
+
+    private fun adc(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            // https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
+            var mem = it.memory.read(it.registers.PC + 1)
+            val carry = if (it.statusFlags.Carry) 1 else 0
+
+            val sum = it.registers.A + mem + carry
+            it.statusFlags.Carry = sum > 0xFF
+            it.statusFlags.setZn(sum)
+
+            it.statusFlags.Overflow = ((it.registers.A xor mem).inv() and (it.registers.A xor sum) and 0x80) != 0
+
+            it.registers.A = sum
+        }
+    }
 
     private fun and(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
