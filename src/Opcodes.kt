@@ -103,6 +103,16 @@ class Opcodes {
         opcode[0x4C] = jmp(AddressMode.Absolute, absolute())
         opcode[0x6C] = jmp(AddressMode.Indirect, indirect())
 
+        /* LDA Opcodes */
+        opcode[0xA9] = lda(AddressMode.Immediate, immediate())
+        opcode[0xA5] = lda(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xB5] = lda(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xAD] = lda(AddressMode.Absolute, absolute())
+        opcode[0xBD] = lda(AddressMode.AbsoluteX, absoluteX())
+        opcode[0xB9] = lda(AddressMode.AbsoluteY, absoluteY())
+        opcode[0xA1] = lda(AddressMode.IndirectX, indirectX())
+        opcode[0xB1] = lda(AddressMode.IndirectY, indirectY())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -327,6 +337,15 @@ class Opcodes {
     private fun jmp(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             it.registers.PC = address(it)
+        }
+    }
+
+    private fun lda(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+
+            it.registers.A = it.memory.read(address)
+            it.statusFlags.setZn(it.registers.A)
         }
     }
 
