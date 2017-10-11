@@ -18,8 +18,8 @@ class Cartridge(filePath: String) {
     private val prgRAMSize: Int
     private val mapper: Int
 
-    private var prgROM: ByteArray
-    private lateinit var chrROM: ByteArray
+    private var prgROM: IntArray
+    private lateinit var chrROM: IntArray
 
     init {
         // Parse Header
@@ -32,25 +32,25 @@ class Cartridge(filePath: String) {
         chrROMSize = data[5].toUnsignedInt() and 0xff
         prgRAMSize = data[8].toUnsignedInt()
 
-        flag6 = data[6].toInt()
-        flag7 = data[7].toInt()
-        flag9 = data[9].toInt()
+        flag6 = data[6].toUnsignedInt()
+        flag7 = data[7].toUnsignedInt()
+        flag9 = data[9].toUnsignedInt()
 
-        mapper = data[6].toUnsignedInt() shr(4) or (data[7].toUnsignedInt() and 0xF0)
+        mapper = data[6].toUnsignedInt()  shr(4) or (data[7].toUnsignedInt()  and 0xF0)
 
         // Loading Prg ROM
         var prgOffset = 16 + if ((flag6 and 0x1) > 0) 512 else 0
-        prgROM = data.copyOfRange(prgOffset, prgOffset + prgROMSize)
+        prgROM = data.copyOfRange(prgOffset, prgOffset + prgROMSize).map { it.toInt() }.toIntArray()
 
-        if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset + prgROMSize + chrROMSize)
+        if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset + prgROMSize + chrROMSize).map { it.toInt() }.toIntArray()
     }
 
-    fun readPRGRom(address: Int): Byte {
-        return prgROM[address]
+    fun readPRGRom(address: Int): Int {
+        return prgROM[address] and 0xFF
     }
 
-    fun readCHRRom(address: Int): Byte {
-        return if (chrROMSize != 0) chrROM[address]
+    fun readCHRRom(address: Int): Int {
+        return if (chrROMSize != 0) chrROM[address] and 0xFF
         else throw NoCHRRomException("There's no CHR ROM")
     }
 

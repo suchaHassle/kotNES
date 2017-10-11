@@ -57,7 +57,7 @@ class CPU(memory: Memory) {
         var i = 0
 
         while (true) {
-            var opcode = memory.read(i).toUnsignedInt()
+            var opcode = memory.read(i)
             println("Executing opcode: " + opcode.toString())
 
             opcodes.opcode[opcode]?.also {
@@ -76,24 +76,24 @@ class CPU(memory: Memory) {
 }
 
 data class Register (
-        var A: Byte = 0,
-        var X: Byte = 0,
-        var Y: Byte = 0,
-        var S: Byte = 0,
-        var P: Byte = 0,
-        var PC: Short = 0
+        var A: Int = 0,
+        var X: Int = 0,
+        var Y: Int = 0,
+        var S: Int = 0,
+        var P: Int = 0,
+        var PC: Int = 0
 ) {
     fun reset() {
         A = 0
         X = 0
         Y = 0
-        S = 0xFD.toSignedByte()
+        S = 0xFD
         P = 0
-        PC = 0xC000.toSignedShort()
+        PC = 0xC000
     }
 
     fun tick(count: Int) {
-        PC = (PC + count).toSignedShort()
+        PC += count
     }
 }
 
@@ -135,8 +135,8 @@ data class StatusFlag (
         Negative = status.isBitSet(7)
     }
 
-    fun setZn(value: Byte) {
-        Zero = (value.toUnsignedInt() == 0)
-        Negative = ((value.toUnsignedInt() shr 7) and 1) == 1
+    fun setZn(value: Int) {
+        Zero = (value == 0)
+        Negative = ((value shr 7) and 1) == 1
     }
 }

@@ -16,33 +16,33 @@ class Memory(cartridge: Cartridge) {
 
     class NotImplementedException(override var message: String) : Exception()
 
-    private val internalRam = ByteArray(0x800)
+    private val internalRam = IntArray(0x800)
 
-    fun read(address: Int): Byte = when (address) {
-        in 0x000..0x1FFF -> internalRam[address and 0x800]
+    fun read(address: Int): Int = when (address) {
+        in 0x000..0x1FFF -> internalRam[address and 0x800] and 0xFF
         in 0x4020..0xFFFF -> mapper.read(address)
         else -> throw NotImplementedException("Only internal RAM Address right now")
     }
 
     fun read16(address: Int): Int {
-        val lo = read(address).toUnsignedInt()
-        val hi = read(address + 1).toUnsignedInt()
+        val lo = read(address)
+        val hi = read(address + 1)
         return (hi shl 8) or lo
     }
 
     fun read16wrap(address: Int): Int {
         if (address and 0xFF == 0xFF) {
-            val lo = read(address).toUnsignedInt()
-            val hi = read(address and 0xFF.inv()).toUnsignedInt()
+            val lo = read(address)
+            val hi = read(address and 0xFF.inv())
 
             return (hi shl 8) or lo
         }
         return read16(address)
     }
 
-    fun write(address: Int, value: Byte) {
+    fun write(address: Int, value: Int) {
         when (address) {
-            in 0x000..0x1FFF -> internalRam[address and 0x800] = value
+            in 0x000..0x1FFF -> internalRam[address and 0x800] = value and 0xFF
             else -> throw NotImplementedException("Only internal RAM Address right now")
         }
     }

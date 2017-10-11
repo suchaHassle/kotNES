@@ -6,7 +6,7 @@ class NROM(cartridge: Cartridge) {
 
     private var cartridge: Cartridge = cartridge
 
-    fun read(address: Int): Byte = when {
+    fun read(address: Int): Int = when {
         address >= 0x8000 -> cartridge.readPRGRom(address)
         address <= 0x2000 -> cartridge.readCHRRom(address)
         else -> 0

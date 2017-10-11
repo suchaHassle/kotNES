@@ -146,7 +146,7 @@ class Opcodes {
     }
 
     private fun indirectYAdr(): (CPU) -> Int = {
-        it.memory.read(it.registers.PC + 1).toUnsignedInt()
+        it.memory.read(it.registers.PC + 1)
     }
 
     private fun immediate(): (CPU) -> Int = { it.registers.PC + 1 }
@@ -156,23 +156,23 @@ class Opcodes {
     private fun relative(): (CPU) -> Int = { it.registers.PC + it.memory.read(it.registers.PC + 1) + 2 }
 
     private fun zeroPageAdr(): (CPU) -> Int = {
-        it.memory.read(it.registers.PC + 1).toUnsignedInt()
+        it.memory.read(it.registers.PC + 1)
     }
 
     private fun zeroPageXAdr(): (CPU) -> Int = {
-        ((it.memory.read(it.registers.PC + 1).toUnsignedInt() + it.registers.X) and 0xFF)
+        ((it.memory.read(it.registers.PC + 1) + it.registers.X) and 0xFF)
     }
 
     private fun zeroPageYAdr(): (CPU) -> Int = {
-        ((it.memory.read(it.registers.PC + 1).toUnsignedInt() + it.registers.Y) and 0xFF)
+        ((it.memory.read(it.registers.PC + 1) + it.registers.Y) and 0xFF)
     }
 
     /* Opcode methods */
 
     private fun and(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
-            it.registers.A = (it.registers.A.toUnsignedInt() and it.memory.read(address).toUnsignedInt()).toSignedByte()
+            val address = address(it)
+            it.registers.A = it.registers.A and it.memory.read(address)
             statusFlags.setZn(registers.A)
         }
     }
@@ -183,28 +183,28 @@ class Opcodes {
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
-                registers.A = (registers.A.toUnsignedInt() shl 1).toSignedByte()
+                registers.A = registers.A shl 1
 
                 statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(7)
 
-                memory.write(address, (data.toUnsignedInt() shl 1).toSignedByte())
+                memory.write(address, (data shl 1))
 
-                statusFlags.setZn((data.toUnsignedInt() shl 1).toSignedByte())
+                statusFlags.setZn(data shl 1)
             }
         }
     }
 
     private fun bit(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
+            val address = address(it)
             var data = it.memory.read(address)
 
             it.statusFlags.Negative = data.isBitSet(7)
             it.statusFlags.Overflow = data.isBitSet(6)
-            it.statusFlags.Zero = (data.toUnsignedInt() and it.registers.A.toUnsignedInt()) == 0
+            it.statusFlags.Zero = data and it.registers.A == 0
         }
     }
 
@@ -234,37 +234,37 @@ class Opcodes {
 
     private fun cmp(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
-            var data = it.memory.read(address)
+            val address = address(it)
+            val data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.A >= data
-            it.statusFlags.setZn((it.registers.A - data).toSignedByte())
+            it.statusFlags.setZn(it.registers.A - data)
         }
     }
 
     private fun cpx(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
-            var data = it.memory.read(address)
+            val address = address(it)
+            val data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.X >= data
-            it.statusFlags.setZn((it.registers.X - data).toSignedByte())
+            it.statusFlags.setZn(it.registers.X - data)
         }
     }
 
     private fun cpy(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
-            var data = it.memory.read(address)
+            val address = address(it)
+            val data = it.memory.read(address)
 
             it.statusFlags.Carry = it.registers.Y >= data
-            it.statusFlags.setZn((it.registers.Y - data).toSignedByte())
+            it.statusFlags.setZn(it.registers.Y - data)
         }
     }
 
     private fun dec(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
+            val address = address(it)
             var data = it.memory.read(address)
             data--
             it.memory.write(address, data)
@@ -288,15 +288,15 @@ class Opcodes {
 
     private fun eor(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
-            var data = it.memory.read(address)
-            it.registers.A = ((it.registers.A.toUnsignedInt() xor data.toUnsignedInt()) and 0xFF).toSignedByte()
+            val address = address(it)
+            val data = it.memory.read(address)
+            it.registers.A = (it.registers.A xor data) and 0xFF
         }
     }
 
     private fun inc(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
+            val address = address(it)
             var data = it.memory.read(address)
             data++
             it.memory.write(address, data)
@@ -320,20 +320,20 @@ class Opcodes {
 
     private fun lsr(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
-            var address = address(it)
+            val address = address(it)
 
             if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = (registers.A.toUnsignedInt() and 1) == 1
-                registers.A = (registers.A.toUnsignedInt() shr 1).toSignedByte()
+                statusFlags.Carry = (registers.A and 1) == 1
+                registers.A = registers.A shr 1
 
                 statusFlags.setZn(registers.A)
             } else {
-                var data = memory.read(address)
-                statusFlags.Carry = (data.toUnsignedInt() and 1) == 1
+                val data = memory.read(address)
+                statusFlags.Carry = (data and 1) == 1
 
-                memory.write(address, (data.toUnsignedInt() shr 1).toSignedByte())
+                memory.write(address, (data shr 1))
 
-                statusFlags.setZn((data.toUnsignedInt() shr 1).toSignedByte())
+                statusFlags.setZn(data shr 1)
             }
         }
     }
@@ -341,18 +341,18 @@ class Opcodes {
     private fun rol(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             val tempCarry = statusFlags.Carry
-            var address = address(it)
+            val address = address(it)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
-                registers.A = ((registers.A.toUnsignedInt() shl 1) or (if (tempCarry) 1 else 0)).toSignedByte()
+                registers.A = (registers.A shl 1) or (if (tempCarry) 1 else 0)
 
                 statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(7)
 
-                data = ((data.toUnsignedInt() shl 1) or (if (tempCarry) 1 else 0)).toSignedByte()
+                data = (data shl 1) or (if (tempCarry) 1 else 0)
                 memory.write(address, data)
 
                 statusFlags.setZn(data)
@@ -363,18 +363,18 @@ class Opcodes {
     private fun ror(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             val tempCarry = statusFlags.Carry
-            var address = address(it)
+            val address = address(it)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(0)
-                registers.A = ((registers.A.toUnsignedInt() shr 1) or (if (tempCarry) 0x80 else 0)).toSignedByte()
+                registers.A = (registers.A shr 1) or (if (tempCarry) 0x80 else 0)
 
                 statusFlags.setZn(registers.A)
             } else {
                 var data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(0)
 
-                data = ((data.toUnsignedInt() shr 1) or (if (tempCarry) 0x80 else 0)).toSignedByte()
+                data = (data shr 1) or (if (tempCarry) 0x80 else 0)
                 memory.write(address, data)
 
                 statusFlags.setZn(data)
