@@ -11,7 +11,6 @@ class CPU(memory: Memory) {
     var opcodes = Opcodes()
 
     var memory: Memory = memory
-    private var A: Byte = 0 // Accumulator
 
     private var addressModes: IntArray = intArrayOf(
      // 0    1   2   3   4     5    6    7   8   9   A   B   C   D   E   F
@@ -76,13 +75,37 @@ class CPU(memory: Memory) {
 }
 
 data class Register (
-        var A: Int = 0,
-        var X: Int = 0,
-        var Y: Int = 0,
-        var S: Int = 0,
-        var P: Int = 0,
-        var PC: Int = 0
+        private var _A: Int = 0,
+        private var _X: Int = 0,
+        private var _Y: Int = 0,
+        private var _S: Int = 0,
+        private var _P: Int = 0,
+        private var _PC: Int = 0
 ) {
+    var A: Int
+        get():Int { return _A and 0xFF }
+        set(value) { _A = value and 0xFF }
+
+    var X: Int
+        get() = _X and 0xFF
+        set(value) { _X = value and 0xFF }
+
+    var Y: Int
+        get() = _Y and 0xFF
+        set(value) { _Y = value and 0xFF }
+
+    var S: Int
+        get():Int { return _S and 0xFF }
+        set(value) { _S = value and 0xFF }
+
+    var P: Int
+        get() = _P and 0xFF
+        set(value) { _P = value and 0xFF }
+
+    var PC: Int
+        get() = _PC and 0xFF
+        set(value) { _PC = value and 0xFF }
+
     fun reset() {
         A = 0
         X = 0
