@@ -163,6 +163,23 @@ class Opcodes {
         opcode[0x38] = sec(AddressMode.Implied, implied())
         opcode[0xF8] = sed(AddressMode.Implied, implied())
         opcode[0x78] = sei(AddressMode.Implied, implied())
+
+        /* STA Opcodes */
+        opcode[0x85] = sta(AddressMode.Immediate, immediate())
+        opcode[0x95] = sta(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x8D] = sta(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x9D] = sta(AddressMode.Absolute, absolute())
+        opcode[0x99] = sta(AddressMode.AbsoluteX, absoluteX())
+        opcode[0x81] = sta(AddressMode.AbsoluteY, absoluteY())
+        opcode[0x91] = sta(AddressMode.IndirectX, indirectX())
+
+        /* STX, STY Opcodes */
+        opcode[0x86] = stx(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x96] = stx(AddressMode.ZeroPageY, zeroPageYAdr())
+        opcode[0x8E] = stx(AddressMode.Absolute, absolute())
+        opcode[0x84] = sty(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x94] = sty(AddressMode.ZeroPageY, zeroPageAdr())
+        opcode[0x8C] = sty(AddressMode.Absolute, absolute())
     }
 
     /* Address mode memory address */
@@ -488,6 +505,24 @@ class Opcodes {
     private fun sei(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             it.statusFlags.InterruptDisable = true
+        }
+    }
+
+    private fun sta(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.memory.write(address(it), it.registers.A)
+        }
+    }
+
+    private fun stx(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.memory.write(address(it), it.registers.X)
+        }
+    }
+
+    private fun sty(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.memory.write(address(it), it.registers.Y)
         }
     }
 }
