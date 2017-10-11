@@ -158,6 +158,11 @@ class Opcodes {
         opcode[0x76] = ror(AddressMode.ZeroPageX, zeroPageXAdr())
         opcode[0x6E] = ror(AddressMode.Absolute, absolute())
         opcode[0x7E] = ror(AddressMode.AbsoluteX, absoluteX())
+
+        /* SEC, SED, SEI Opcodes */
+        opcode[0x38] = sec(AddressMode.Implied, implied())
+        opcode[0xF8] = sed(AddressMode.Implied, implied())
+        opcode[0x78] = sei(AddressMode.Implied, implied())
     }
 
     /* Address mode memory address */
@@ -465,6 +470,24 @@ class Opcodes {
 
                 statusFlags.setZn(data)
             }
+        }
+    }
+
+    private fun sec(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.Carry = true
+        }
+    }
+
+    private fun sed(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.DecimalMode = true
+        }
+    }
+
+    private fun sei(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.statusFlags.InterruptDisable = true
         }
     }
 }
