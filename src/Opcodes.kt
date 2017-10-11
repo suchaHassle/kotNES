@@ -99,6 +99,10 @@ class Opcodes {
         opcode[0xE8] = inx(AddressMode.Implied, implied())
         opcode[0xC8] = iny(AddressMode.Implied, implied())
 
+        /* JMP Opcodes */
+        opcode[0x4C] = jmp(AddressMode.Absolute, absolute())
+        opcode[0x6C] = jmp(AddressMode.Indirect, indirect())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -136,6 +140,8 @@ class Opcodes {
     }
 
     private fun accumulator(): (CPU) -> Int = { 0 }
+
+    private fun indirect(): (CPU) -> Int = { it.memory.read16wrap(it.memory.read16(it.registers.PC + 1)) }
 
     private fun indirectX(): (CPU) -> Int = { it.memory.read16wrap(indirectXAdr()(it)) }
 
@@ -315,6 +321,12 @@ class Opcodes {
         it.apply {
             it.registers.Y++
             it.statusFlags.setZn(it.registers.Y)
+        }
+    }
+
+    private fun jmp(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.PC = address(it)
         }
     }
 
