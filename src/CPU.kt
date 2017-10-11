@@ -83,7 +83,7 @@ data class Register (
         private var _PC: Int = 0
 ) {
     var A: Int
-        get():Int { return _A and 0xFF }
+        get()= _A and 0xFF
         set(value) { _A = value and 0xFF }
 
     var X: Int
@@ -95,7 +95,7 @@ data class Register (
         set(value) { _Y = value and 0xFF }
 
     var S: Int
-        get():Int { return _S and 0xFF }
+        get() = _S and 0xFF
         set(value) { _S = value and 0xFF }
 
     var P: Int
