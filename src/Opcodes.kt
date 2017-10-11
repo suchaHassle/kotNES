@@ -113,6 +113,18 @@ class Opcodes {
         opcode[0xA1] = lda(AddressMode.IndirectX, indirectX())
         opcode[0xB1] = lda(AddressMode.IndirectY, indirectY())
 
+        /* LDX, LDY Opcodes */
+        opcode[0xA2] = ldx(AddressMode.Immediate, immediate())
+        opcode[0xA6] = ldx(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xB6] = ldx(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xAE] = ldx(AddressMode.Absolute, absolute())
+        opcode[0xBE] = ldx(AddressMode.AbsoluteX, absoluteX())
+        opcode[0xA0] = ldy(AddressMode.Immediate, immediate())
+        opcode[0xA4] = ldy(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xB4] = ldy(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xAC] = ldy(AddressMode.Absolute, absolute())
+        opcode[0xBC] = ldy(AddressMode.AbsoluteX, absoluteX())
+
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator())
         opcode[0x46] = lsr(AddressMode.ZeroPage, zeroPageAdr())
@@ -346,6 +358,24 @@ class Opcodes {
 
             it.registers.A = it.memory.read(address)
             it.statusFlags.setZn(it.registers.A)
+        }
+    }
+
+    private fun ldx(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+
+            it.registers.X = it.memory.read(address)
+            it.statusFlags.setZn(it.registers.X)
+        }
+    }
+
+    private fun ldy(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            var address = address(it)
+
+            it.registers.Y = it.memory.read(address)
+            it.statusFlags.setZn(it.registers.Y)
         }
     }
 
