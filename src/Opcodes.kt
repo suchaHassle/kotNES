@@ -180,6 +180,12 @@ class Opcodes {
         opcode[0x84] = sty(AddressMode.ZeroPage, zeroPageAdr())
         opcode[0x94] = sty(AddressMode.ZeroPageY, zeroPageAdr())
         opcode[0x8C] = sty(AddressMode.Absolute, absolute())
+
+        /* TAX, TAY, TXA, TYA Opcodes */
+        opcode[0xAA] = tax(AddressMode.Implied, implied())
+        opcode[0xA8] = tay(AddressMode.Implied, implied())
+        opcode[0x8A] = txa(AddressMode.Implied, implied())
+        opcode[0x98] = tya(AddressMode.Implied, implied())
     }
 
     /* Address mode memory address */
@@ -523,6 +529,38 @@ class Opcodes {
     private fun sty(mode: AddressMode, address: (CPU) -> Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.Y)
+        }
+    }
+
+    private fun tax(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.X = it.registers.A
+
+            it.statusFlags.setZn(it.registers.X)
+        }
+    }
+
+    private fun tay(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.Y = it.registers.A
+
+            it.statusFlags.setZn(it.registers.Y)
+        }
+    }
+
+    private fun txa(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.A = it.registers.X
+
+            it.statusFlags.setZn(it.registers.A)
+        }
+    }
+
+    private fun tya(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.A = it.registers.Y
+
+            it.statusFlags.setZn(it.registers.A)
         }
     }
 }
