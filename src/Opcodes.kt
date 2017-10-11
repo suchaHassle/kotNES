@@ -169,6 +169,16 @@ class Opcodes {
         opcode[0x6E] = ror(AddressMode.Absolute, absolute())
         opcode[0x7E] = ror(AddressMode.AbsoluteX, absoluteX())
 
+        /* SBC Opcodes */
+        opcode[0xE9] = sbc(AddressMode.Immediate, immediate())
+        opcode[0xE5] = sbc(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0xF5] = sbc(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0xED] = sbc(AddressMode.Absolute, absolute())
+        opcode[0xFD] = sbc(AddressMode.AbsoluteX, absoluteX())
+        opcode[0xF9] = sbc(AddressMode.AbsoluteY, absoluteY())
+        opcode[0xE1] = sbc(AddressMode.IndirectX, indirectX())
+        opcode[0xF1] = sbc(AddressMode.IndirectY, indirectY())
+
         /* SEC, SED, SEI Opcodes */
         opcode[0x38] = sec(AddressMode.Implied, implied())
         opcode[0xF8] = sed(AddressMode.Implied, implied())
@@ -519,6 +529,21 @@ class Opcodes {
 
                 statusFlags.setZn(data)
             }
+        }
+    }
+
+    private fun sbc(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            val mem = it.memory.read(address(it))
+            val carry = if(it.statusFlags.Carry) 0 else 1
+
+            val difference = it.registers.A - mem - carry
+            it.statusFlags.Carry = difference >= 0
+            it.statusFlags.setZn(difference)
+
+            it.statusFlags.Overflow = ((it.registers.A xor mem) and (it.registers.A xor difference) and 0xFF) != 0
+
+            it.registers.A = difference
         }
     }
 
