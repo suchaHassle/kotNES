@@ -132,6 +132,19 @@ class Opcodes {
         opcode[0x4E] = lsr(AddressMode.Absolute, absolute())
         opcode[0x5E] = lsr(AddressMode.AbsoluteX, absoluteX())
 
+        /* NOP Opcode */
+        opcode[0xEA] = nop(AddressMode.Implied, implied())
+
+        /* ORA Opcodes */
+        opcode[0x09] = ora(AddressMode.Immediate, immediate())
+        opcode[0x05] = ora(AddressMode.ZeroPage, zeroPageAdr())
+        opcode[0x15] = ora(AddressMode.ZeroPageX, zeroPageXAdr())
+        opcode[0x0D] = ora(AddressMode.Absolute, absolute())
+        opcode[0x1D] = ora(AddressMode.AbsoluteX, absoluteX())
+        opcode[0x19] = ora(AddressMode.AbsoluteY, absoluteY())
+        opcode[0x01] = ora(AddressMode.IndirectX, indirectX())
+        opcode[0x11] = ora(AddressMode.IndirectY, indirectY())
+
         /* ROL Opcodes */
         opcode[0x2A] = rol(AddressMode.Accumulator, accumulator())
         opcode[0x26] = rol(AddressMode.ZeroPage, zeroPageAdr())
@@ -396,6 +409,18 @@ class Opcodes {
 
                 statusFlags.setZn(data shr 1)
             }
+        }
+    }
+
+    private fun nop(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        // Literally do nothing
+    }
+
+    private fun ora(mode: AddressMode, address: (CPU) -> Int) = Opcode {
+        it.apply {
+            it.registers.A = it.registers.A or it.memory.read(address(it))
+
+            it.statusFlags.setZn(it.registers.A)
         }
     }
 
