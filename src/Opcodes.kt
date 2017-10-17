@@ -52,7 +52,7 @@ class Opcodes {
         opcode[0x0E] = asl(AddressMode.Absolute, absolute(), 6)
         opcode[0x1E] = asl(AddressMode.AbsoluteX, absoluteX(), 7)
 
-        /* BCC, BCS, BEQ,  Opcodes */
+        /* BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS Opcodes */
         opcode[0x90] = bcc(AddressMode.Relative, relative(), 2)
         opcode[0xB0] = bcs(AddressMode.Relative, relative(), 2)
         opcode[0xF0] = beq(AddressMode.Relative, relative(), 2)
@@ -345,6 +345,7 @@ class Opcodes {
         it.apply {
             val address = address(it)
             var data = it.memory.read(address)
+            it.cycles += cycles
 
             it.statusFlags.Negative = data.isBitSet(7)
             it.statusFlags.Overflow = data.isBitSet(6)
@@ -355,24 +356,28 @@ class Opcodes {
     private fun clc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Carry = false
+            it.cycles += cycles
         }
     }
 
     private fun cld(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.DecimalMode = false
+            it.cycles += cycles
         }
     }
 
     private fun cli(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.InterruptDisable = false
+            it.cycles += cycles
         }
     }
 
     private fun clv(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Overflow = false
+            it.cycles += cycles
         }
     }
 
@@ -394,6 +399,7 @@ class Opcodes {
 
             it.statusFlags.Carry = it.registers.X >= data
             it.statusFlags.setZn(it.registers.X - data)
+            it.cycles += cycles
         }
     }
 
@@ -404,6 +410,7 @@ class Opcodes {
 
             it.statusFlags.Carry = it.registers.Y >= data
             it.statusFlags.setZn(it.registers.Y - data)
+            it.cycles += cycles
         }
     }
 
@@ -414,6 +421,7 @@ class Opcodes {
             data--
             it.memory.write(address, data)
             it.statusFlags.setZn(data)
+            it.cycles += cycles
         }
     }
 
@@ -421,6 +429,7 @@ class Opcodes {
         it.apply {
             it.registers.X--
             it.statusFlags.setZn(it.registers.X)
+            it.cycles += cycles
         }
     }
 
@@ -428,6 +437,7 @@ class Opcodes {
         it.apply {
             it.registers.Y--
             it.statusFlags.setZn(it.registers.Y)
+            it.cycles += cycles
         }
     }
 
@@ -447,6 +457,7 @@ class Opcodes {
             data++
             it.memory.write(address, data)
             it.statusFlags.setZn(data)
+            it.cycles += cycles
         }
     }
 
@@ -454,6 +465,7 @@ class Opcodes {
         it.apply {
             it.registers.X++
             it.statusFlags.setZn(it.registers.X)
+            it.cycles += cycles
         }
     }
 
@@ -461,12 +473,14 @@ class Opcodes {
         it.apply {
             it.registers.Y++
             it.statusFlags.setZn(it.registers.Y)
+            it.cycles += cycles
         }
     }
 
     private fun jmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.PC = address(it)
+            it.cycles += cycles
         }
     }
 
@@ -503,6 +517,7 @@ class Opcodes {
     private fun lsr(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
+            it.cycles += cycles
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = (registers.A and 1) == 1
@@ -522,6 +537,7 @@ class Opcodes {
 
     private fun nop(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         // Literally do nothing
+        it.apply { it.cycles += cycles }
     }
 
     private fun ora(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
@@ -537,6 +553,7 @@ class Opcodes {
         it.apply {
             val tempCarry = statusFlags.Carry
             val address = address(it)
+            it.cycles += cycles
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
@@ -559,6 +576,7 @@ class Opcodes {
         it.apply {
             val tempCarry = statusFlags.Carry
             val address = address(it)
+            it.cycles += cycles
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(0)
@@ -596,43 +614,49 @@ class Opcodes {
     private fun sec(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Carry = true
+            it.cycles += cycles
         }
     }
 
     private fun sed(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.DecimalMode = true
+            it.cycles += cycles
         }
     }
 
     private fun sei(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.InterruptDisable = true
+            it.cycles += cycles
         }
     }
 
     private fun sta(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.A)
+            it.cycles += cycles
         }
     }
 
     private fun stx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.X)
+            it.cycles += cycles
         }
     }
 
     private fun sty(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.Y)
+            it.cycles += cycles
         }
     }
 
     private fun tax(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.X = it.registers.A
-
+            it.cycles += cycles
             it.statusFlags.setZn(it.registers.X)
         }
     }
@@ -640,24 +664,24 @@ class Opcodes {
     private fun tay(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.Y = it.registers.A
-
             it.statusFlags.setZn(it.registers.Y)
+            it.cycles += cycles
         }
     }
 
     private fun txa(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.X
-
             it.statusFlags.setZn(it.registers.A)
+            it.cycles += cycles
         }
     }
 
     private fun tya(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.Y
-
             it.statusFlags.setZn(it.registers.A)
+            it.cycles += cycles
         }
     }
 }
