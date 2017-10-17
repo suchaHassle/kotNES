@@ -9,6 +9,8 @@ class NES {
         memory = Memory(cartridge)
         cpu = CPU(memory)
 
-        cpu.start()
+        while (true) {
+            cpu.tick()
+        }
     }
 }

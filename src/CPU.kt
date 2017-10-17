@@ -33,21 +33,19 @@ class CPU(memory: Memory) {
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0   // F
     )
 
-    fun start() {
-        var i = 0
+    fun tick(): Int {
+        val initCycle = cycles
+        var opcode = memory.read(registers.PC)
+        println("Executing opcode: " + opcode.toString())
+        opcodes.pageCrossed = false
 
-        while (true) {
-            var opcode = memory.read(i)
-            println("Executing opcode: " + opcode.toString())
-            opcodes.pageCrossed = false
-
-            opcodes.opcode[opcode]?.also {
-                it.op(this)
-            }
-
-            i += instructionSizes[opcode]
-            registers.tick(instructionSizes[opcode])
+        opcodes.opcode[opcode]?.also {
+            it.op(this)
         }
+
+        registers.tick(instructionSizes[opcode])
+
+        return cycles - initCycle
     }
 
     fun reset() {
