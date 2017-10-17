@@ -6,6 +6,7 @@ import toUnsignedInt
 
 class Opcodes {
     val opcode = Array(0xFF, { Opcode { 0 } })
+    var pageCrossed: Boolean = false
 
     private enum class AddressMode {
         Absolute,
@@ -29,20 +30,20 @@ class Opcodes {
         opcode[0x65] = adc(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0x75] = adc(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0x6D] = adc(AddressMode.Absolute, absolute(), 4)
-        opcode[0x7D] = adc(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0x79] = adc(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0x7D] = adc(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0x79] = adc(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0x61] = adc(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0x71] = adc(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0x71] = adc(AddressMode.IndirectY, indirectY(), 5)
 
         /* AND Opcodes */
         opcode[0x29] = and(AddressMode.Immediate, immediate(), 2)
         opcode[0x25] = and(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0x35] = and(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0x2D] = and(AddressMode.Absolute, absolute(), 4)
-        opcode[0x3D] = and(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0x39] = and(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0x3D] = and(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0x39] = and(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0x21] = and(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0x31] = and(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0x31] = and(AddressMode.IndirectY, indirectY(), 5)
 
         /* ASL Opcodes */
         opcode[0x0A] = asl(AddressMode.Accumulator, accumulator(), 2)
@@ -50,6 +51,16 @@ class Opcodes {
         opcode[0x16] = asl(AddressMode.ZeroPageX, zeroPageXAdr(), 6)
         opcode[0x0E] = asl(AddressMode.Absolute, absolute(), 6)
         opcode[0x1E] = asl(AddressMode.AbsoluteX, absoluteX(), 7)
+
+        /* BCC, BCS, BEQ,  Opcodes */
+        opcode[0x90] = bcc(AddressMode.Relative, relative(), 2)
+        opcode[0xB0] = bcs(AddressMode.Relative, relative(), 2)
+        opcode[0xF0] = beq(AddressMode.Relative, relative(), 2)
+        opcode[0x30] = bmi(AddressMode.Relative, relative(), 2)
+        opcode[0xD0] = bne(AddressMode.Relative, relative(), 2)
+        opcode[0x10] = bpl(AddressMode.Relative, relative(), 2)
+        opcode[0x50] = bvc(AddressMode.Relative, relative(), 2)
+        opcode[0x70] = bvs(AddressMode.Relative, relative(), 2)
 
         /* BIT Opcodes */
         opcode[0x24] = bit(AddressMode.ZeroPage, zeroPageAdr(), 3)
@@ -66,10 +77,10 @@ class Opcodes {
         opcode[0xC5] = cmp(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0xD5] = cmp(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0xCD] = cmp(AddressMode.Absolute, absolute(), 4)
-        opcode[0xDD] = cmp(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0xD9] = cmp(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0xDD] = cmp(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0xD9] = cmp(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0xC1] = cmp(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0xD1] = cmp(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0xD1] = cmp(AddressMode.IndirectY, indirectY(), 5)
 
         /* CPX Opcodes */
         opcode[0xE0] = cpx(AddressMode.Immediate, immediate(), 2)
@@ -96,10 +107,10 @@ class Opcodes {
         opcode[0x45] = eor(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0x55] = eor(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0x4D] = eor(AddressMode.Absolute, absolute(), 4)
-        opcode[0x5D] = eor(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0x59] = eor(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0x5D] = eor(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0x59] = eor(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0x41] = eor(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0x51] = eor(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0x51] = eor(AddressMode.IndirectY, indirectY(), 5)
 
         /* INC, INX, INY Opcodes */
         opcode[0xE6] = inc(AddressMode.ZeroPage, zeroPageAdr(), 5)
@@ -118,22 +129,22 @@ class Opcodes {
         opcode[0xA5] = lda(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0xB5] = lda(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0xAD] = lda(AddressMode.Absolute, absolute(), 4)
-        opcode[0xBD] = lda(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0xB9] = lda(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0xBD] = lda(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0xB9] = lda(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0xA1] = lda(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0xB1] = lda(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0xB1] = lda(AddressMode.IndirectY, indirectY(), 5)
 
         /* LDX, LDY Opcodes */
         opcode[0xA2] = ldx(AddressMode.Immediate, immediate(), 2)
         opcode[0xA6] = ldx(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0xB6] = ldx(AddressMode.ZeroPageY, zeroPageYAdr(), 4)
         opcode[0xAE] = ldx(AddressMode.Absolute, absolute(), 4)
-        opcode[0xBE] = ldx(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0xBE] = ldx(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0xA0] = ldy(AddressMode.Immediate, immediate(), 2)
         opcode[0xA4] = ldy(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0xB4] = ldy(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0xAC] = ldy(AddressMode.Absolute, absolute(), 4)
-        opcode[0xBC] = ldy(AddressMode.AbsoluteX, absoluteX(), 4, true)
+        opcode[0xBC] = ldy(AddressMode.AbsoluteX, absoluteX(), 4)
 
         /* LSR Opcodes */
         opcode[0x4A] = lsr(AddressMode.Accumulator, accumulator(), 2)
@@ -150,10 +161,10 @@ class Opcodes {
         opcode[0x05] = ora(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0x15] = ora(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0x0D] = ora(AddressMode.Absolute, absolute(), 4)
-        opcode[0x1D] = ora(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0x19] = ora(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0x1D] = ora(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0x19] = ora(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0x01] = ora(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0x11] = ora(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0x11] = ora(AddressMode.IndirectY, indirectY(), 5)
 
         /* ROL Opcodes */
         opcode[0x2A] = rol(AddressMode.Accumulator, accumulator(), 2)
@@ -174,10 +185,10 @@ class Opcodes {
         opcode[0xE5] = sbc(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0xF5] = sbc(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0xED] = sbc(AddressMode.Absolute, absolute(), 4)
-        opcode[0xFD] = sbc(AddressMode.AbsoluteX, absoluteX(), 4, true)
-        opcode[0xF9] = sbc(AddressMode.AbsoluteY, absoluteY(), 4, true)
+        opcode[0xFD] = sbc(AddressMode.AbsoluteX, absoluteX(), 4)
+        opcode[0xF9] = sbc(AddressMode.AbsoluteY, absoluteY(), 4)
         opcode[0xE1] = sbc(AddressMode.IndirectX, indirectX(), 6)
-        opcode[0xF1] = sbc(AddressMode.IndirectY, indirectY(), 5, true)
+        opcode[0xF1] = sbc(AddressMode.IndirectY, indirectY(), 5)
 
         /* SEC, SED, SEI Opcodes */
         opcode[0x38] = sec(AddressMode.Implied, implied(), 2)
@@ -212,9 +223,17 @@ class Opcodes {
 
     private fun absolute(): (CPU) -> Int = { it.memory.read16(it.registers.PC + 1) }
 
-    private fun absoluteX(): (CPU) -> Int = { it.memory.read16(it.registers.PC + 1) + it.registers.X }
+    private fun absoluteX(): (CPU) -> Int = {
+        var address = it.memory.read16(it.registers.PC + 1) + it.registers.X
+        pageCrossed = isPageCrossed(address - it.registers.X, it.registers.X)
+        address
+    }
 
-    private fun absoluteY(): (CPU) -> Int = { it.memory.read16(it.registers.PC + 1) + it.registers.Y }
+    private fun absoluteY(): (CPU) -> Int = {
+        var address = it.memory.read16(it.registers.PC + 1) + it.registers.Y
+        pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
+        address
+    }
 
     private fun accumulator(): (CPU) -> Int = { 0 }
 
@@ -222,7 +241,11 @@ class Opcodes {
 
     private fun indirectX(): (CPU) -> Int = { it.memory.read16wrap(indirectXAdr()(it)) }
 
-    private fun indirectY(): (CPU) -> Int = { it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y }
+    private fun indirectY(): (CPU) -> Int = {
+        var address = it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y
+        pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
+        address
+    }
 
     private fun indirectXAdr(): (CPU) -> Int = { (it.memory.read(it.registers.PC + 1) + it.registers.X) and 0xFF }
 
@@ -240,11 +263,22 @@ class Opcodes {
 
     private fun zeroPageYAdr(): (CPU) -> Int = { (it.memory.read(it.registers.PC + 1) + it.registers.Y) and 0xFF }
 
-    /**/
+    /* Opcode helpers */
+    private fun isPageCrossed(a: Int, b: Int): Boolean {
+        return a and 0xFF != b and 0xFF
+    }
+
+    private fun branch(cond: Boolean, address: Int, it: CPU, cycles: Int) {
+        if (cond) {
+            it.cycles += 1 + if (isPageCrossed(it.registers.PC, address)) 1 else 0
+            it.registers.PC = address
+        }
+        it.cycles += cycles
+    }
 
     /* Opcode methods */
 
-    private fun adc(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun adc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             // https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
             var mem = it.memory.read(it.registers.PC + 1)
@@ -261,7 +295,7 @@ class Opcodes {
         }
     }
 
-    private fun and(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun and(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             it.registers.A = it.registers.A and it.memory.read(address)
@@ -270,9 +304,10 @@ class Opcodes {
         }
     }
 
-    private fun asl(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun asl(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             var address = address(it)
+            it.cycles += cycles
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
@@ -290,11 +325,23 @@ class Opcodes {
         }
     }
 
-    private fun bcc(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun bcc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Carry, address(it), it, cycles) } }
 
-    }
+    private fun bcs(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Carry, address(it), it, cycles) } }
 
-    private fun bit(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun beq(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Zero, address(it), it, cycles) } }
+
+    private fun bne(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Zero, address(it), it, cycles) } }
+
+    private fun bmi(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { it.registers.PC = if(it.statusFlags.Negative) address(it) else it.registers.PC } }
+
+    private fun bpl(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Negative, address(it), it, cycles) } }
+
+    private fun bvc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Overflow, address(it), it, cycles) } }
+
+    private fun bvs(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Overflow, address(it), it, cycles) } }
+
+    private fun bit(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             var data = it.memory.read(address)
@@ -305,31 +352,31 @@ class Opcodes {
         }
     }
 
-    private fun clc(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun clc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Carry = false
         }
     }
 
-    private fun cld(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun cld(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.DecimalMode = false
         }
     }
 
-    private fun cli(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun cli(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.InterruptDisable = false
         }
     }
 
-    private fun clv(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun clv(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Overflow = false
         }
     }
 
-    private fun cmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun cmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             val data = it.memory.read(address)
@@ -340,7 +387,7 @@ class Opcodes {
         }
     }
 
-    private fun cpx(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun cpx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             val data = it.memory.read(address)
@@ -350,7 +397,7 @@ class Opcodes {
         }
     }
 
-    private fun cpy(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun cpy(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             val data = it.memory.read(address)
@@ -360,7 +407,7 @@ class Opcodes {
         }
     }
 
-    private fun dec(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun dec(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             var data = it.memory.read(address)
@@ -370,21 +417,21 @@ class Opcodes {
         }
     }
 
-    private fun dex(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun dex(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.X--
             it.statusFlags.setZn(it.registers.X)
         }
     }
 
-    private fun dey(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun dey(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.Y--
             it.statusFlags.setZn(it.registers.Y)
         }
     }
 
-    private fun eor(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun eor(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             val data = it.memory.read(address)
@@ -393,7 +440,7 @@ class Opcodes {
         }
     }
 
-    private fun inc(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun inc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
             var data = it.memory.read(address)
@@ -403,27 +450,27 @@ class Opcodes {
         }
     }
 
-    private fun inx(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun inx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.X++
             it.statusFlags.setZn(it.registers.X)
         }
     }
 
-    private fun iny(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun iny(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.Y++
             it.statusFlags.setZn(it.registers.Y)
         }
     }
 
-    private fun jmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun jmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.PC = address(it)
         }
     }
 
-    private fun lda(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun lda(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             var address = address(it)
 
@@ -433,7 +480,7 @@ class Opcodes {
         }
     }
 
-    private fun ldx(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun ldx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             var address = address(it)
 
@@ -443,7 +490,7 @@ class Opcodes {
         }
     }
 
-    private fun ldy(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun ldy(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             var address = address(it)
 
@@ -453,7 +500,7 @@ class Opcodes {
         }
     }
 
-    private fun lsr(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun lsr(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val address = address(it)
 
@@ -473,11 +520,11 @@ class Opcodes {
         }
     }
 
-    private fun nop(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun nop(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         // Literally do nothing
     }
 
-    private fun ora(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun ora(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.A or it.memory.read(address(it))
 
@@ -486,7 +533,7 @@ class Opcodes {
         }
     }
 
-    private fun rol(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun rol(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val tempCarry = statusFlags.Carry
             val address = address(it)
@@ -508,7 +555,7 @@ class Opcodes {
         }
     }
 
-    private fun ror(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun ror(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val tempCarry = statusFlags.Carry
             val address = address(it)
@@ -530,7 +577,7 @@ class Opcodes {
         }
     }
 
-    private fun sbc(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sbc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             val mem = it.memory.read(address(it))
             val carry = if(it.statusFlags.Carry) 0 else 1
@@ -546,43 +593,43 @@ class Opcodes {
         }
     }
 
-    private fun sec(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sec(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.Carry = true
         }
     }
 
-    private fun sed(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sed(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.DecimalMode = true
         }
     }
 
-    private fun sei(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sei(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.statusFlags.InterruptDisable = true
         }
     }
 
-    private fun sta(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sta(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.A)
         }
     }
 
-    private fun stx(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun stx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.X)
         }
     }
 
-    private fun sty(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun sty(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.memory.write(address(it), it.registers.Y)
         }
     }
 
-    private fun tax(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun tax(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.X = it.registers.A
 
@@ -590,7 +637,7 @@ class Opcodes {
         }
     }
 
-    private fun tay(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun tay(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.Y = it.registers.A
 
@@ -598,7 +645,7 @@ class Opcodes {
         }
     }
 
-    private fun txa(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun txa(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.X
 
@@ -606,7 +653,7 @@ class Opcodes {
         }
     }
 
-    private fun tya(mode: AddressMode, address: (CPU) -> Int, cycles: Int, pageCrossed: Boolean = false) = Opcode {
+    private fun tya(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.Y
 
