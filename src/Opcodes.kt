@@ -5,7 +5,7 @@ import toSignedByte
 import toUnsignedInt
 
 class Opcodes {
-    val opcode = HashMap<Int, Opcode>()
+    val opcode = Array(0xFF, { Opcode { 0 } })
 
     private enum class AddressMode {
         Absolute,
@@ -255,6 +255,8 @@ class Opcodes {
     private fun zeroPageYAdr(): (CPU) -> Int = {
         ((it.memory.read(it.registers.PC + 1) + it.registers.Y) and 0xFF)
     }
+
+    /**/
 
     /* Opcode methods */
 
