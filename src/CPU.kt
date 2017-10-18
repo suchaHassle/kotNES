@@ -127,7 +127,7 @@ data class StatusFlag (
                     (if (DecimalMode) (1 shl 3) else 0) or
                     (if (InterruptDisable) (1 shl 2) else 0) or
                     (if (Zero) (1 shl 1) else 0) or
-                    (if (Carry) 1 else 0)).toSignedByte()
+                    (if (Carry) 1 else 0)) and 0xFF
 
     fun toFlags(status: Byte) {
         Carry = status.isBitSet(0)

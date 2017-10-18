@@ -1,6 +1,7 @@
 package kotNES
 
 import isBitSet
+import sun.jvm.hotspot.debugger.Address
 
 class Opcodes {
     val opcode = Array(0xFF, { Opcode { 0 } })
@@ -63,6 +64,9 @@ class Opcodes {
         /* BIT Opcodes */
         opcode[0x24] = bit(AddressMode.ZeroPage, zeroPageAdr(), 3)
         opcode[0x2C] = bit(AddressMode.Absolute, absolute(), 4)
+
+        /* BRK Opcode */
+        opcode[0x00] = bit(AddressMode.Implied, implied(), 7)
 
         /* CLC, CLD, CLI, CLV Opcode */
         opcode[0x18] = clc(AddressMode.Implied, implied(), 2)
@@ -364,6 +368,17 @@ class Opcodes {
             it.statusFlags.Negative = data.isBitSet(7)
             it.statusFlags.Overflow = data.isBitSet(6)
             it.statusFlags.Zero = data and it.registers.A == 0
+        }
+    }
+
+    private fun brk(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            push16(it.registers.PC, it)
+            push(it.statusFlags.asByte(), it)
+            it.statusFlags.InterruptDisable = true
+            it.registers.PC += it.memory.read16(0xFFFE)
+
+            it.cycles += cycles
         }
     }
 
