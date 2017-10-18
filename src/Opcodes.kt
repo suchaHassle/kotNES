@@ -1,8 +1,6 @@
 package kotNES
 
 import isBitSet
-import toSignedByte
-import toUnsignedInt
 
 class Opcodes {
     val opcode = Array(0xFF, { Opcode { 0 } })
@@ -120,9 +118,10 @@ class Opcodes {
         opcode[0xE8] = inx(AddressMode.Implied, implied(), 2)
         opcode[0xC8] = iny(AddressMode.Implied, implied(), 2)
 
-        /* JMP Opcodes */
+        /* JMP, JSR Opcodes */
         opcode[0x4C] = jmp(AddressMode.Absolute, absolute(), 3)
         opcode[0x6C] = jmp(AddressMode.Indirect, indirect(), 5)
+        opcode[0x20] = jmp(AddressMode.Absolute, absolute(), 6)
 
         /* LDA Opcodes */
         opcode[0xA9] = lda(AddressMode.Immediate, immediate(), 2)
@@ -277,6 +276,21 @@ class Opcodes {
     }
 
     /* Opcode methods */
+
+    private fun push(data: Int, it: CPU) {
+        it.memory.write(0x100 or it.registers.S, data)
+        it.registers.S--
+    }
+
+    private fun push16(data: Int, it: CPU) {
+        push(data shr 8, it)
+        push(data and 0xFF, it)
+    }
+
+    private fun pull(it: CPU): Int {
+        it.registers.S++
+        return it.memory.read(0x100 or it.registers.S)
+    }
 
     private fun adc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
@@ -479,6 +493,14 @@ class Opcodes {
 
     private fun jmp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
+            it.registers.PC = address(it)
+            it.cycles += cycles
+        }
+    }
+
+    private fun jsr(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            push16(it.registers.PC - 1, it)
             it.registers.PC = address(it)
             it.cycles += cycles
         }
