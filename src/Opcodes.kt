@@ -1,7 +1,6 @@
 package kotNES
 
 import isBitSet
-import sun.jvm.hotspot.debugger.Address
 
 class Opcodes {
     val opcode = Array(0xFF, { Opcode { 0 } })
@@ -225,11 +224,13 @@ class Opcodes {
         opcode[0x94] = sty(AddressMode.ZeroPageX, zeroPageXAdr(), 4)
         opcode[0x8C] = sty(AddressMode.Absolute, absolute(), 4)
 
-        /* TAX, TAY, TXA, TYA Opcodes */
+        /* TAX, TAY, TSX, TXA, TYA, TXS Opcodes */
         opcode[0xAA] = tax(AddressMode.Implied, implied(), 2)
         opcode[0xA8] = tay(AddressMode.Implied, implied(), 2)
+        opcode[0xBA] = tsx(AddressMode.Implied, implied(), 2)
         opcode[0x8A] = txa(AddressMode.Implied, implied(), 2)
         opcode[0x98] = tya(AddressMode.Implied, implied(), 2)
+        opcode[0x9A] = txs(AddressMode.Implied, implied(), 2)
     }
 
     /* Address mode memory address */
@@ -289,8 +290,6 @@ class Opcodes {
         it.cycles += cycles
     }
 
-    /* Opcode methods */
-
     private fun push(data: Int, it: CPU) {
         it.memory.write(0x100 or it.registers.S, data)
         it.registers.S--
@@ -309,6 +308,8 @@ class Opcodes {
     private fun pop16(it: CPU): Int {
         return pop(it) or (pop(it) shl 16)
     }
+
+    /* Opcode methods */
 
     private fun adc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
@@ -764,6 +765,14 @@ class Opcodes {
         }
     }
 
+    private fun tsx(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.registers.X = it.registers.S
+            it.statusFlags.setZn(it.registers.X)
+            it.cycles += cycles
+        }
+    }
+
     private fun txa(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
             it.registers.A = it.registers.X
@@ -776,6 +785,13 @@ class Opcodes {
         it.apply {
             it.registers.A = it.registers.Y
             it.statusFlags.setZn(it.registers.A)
+            it.cycles += cycles
+        }
+    }
+
+    private fun txs(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.registers.S = it.registers.X
             it.cycles += cycles
         }
     }
