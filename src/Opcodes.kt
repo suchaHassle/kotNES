@@ -66,7 +66,7 @@ class Opcodes {
         opcode[0x2C] = bit(AddressMode.Absolute, absolute(), 4)
 
         /* BRK Opcode */
-        opcode[0x00] = bit(AddressMode.Implied, implied(), 7)
+        opcode[0x00] = brk(AddressMode.Implied, implied(), 7)
 
         /* CLC, CLD, CLI, CLV Opcode */
         opcode[0x18] = clc(AddressMode.Implied, implied(), 2)
@@ -125,7 +125,7 @@ class Opcodes {
         /* JMP, JSR Opcodes */
         opcode[0x4C] = jmp(AddressMode.Absolute, absolute(), 3)
         opcode[0x6C] = jmp(AddressMode.Indirect, indirect(), 5)
-        opcode[0x20] = jmp(AddressMode.Absolute, absolute(), 6)
+        opcode[0x20] = jsr(AddressMode.Absolute, absolute(), 6)
 
         /* LDA Opcodes */
         opcode[0xA9] = lda(AddressMode.Immediate, immediate(), 2)
@@ -188,6 +188,10 @@ class Opcodes {
         opcode[0x76] = ror(AddressMode.ZeroPageX, zeroPageXAdr(), 6)
         opcode[0x6E] = ror(AddressMode.Absolute, absolute(), 6)
         opcode[0x7E] = ror(AddressMode.AbsoluteX, absoluteX(), 7)
+
+        /* RTI, RTS Opcode */
+        opcode[0x40] = rti(AddressMode.Implied, implied(), 6)
+        opcode[0x60] = rts(AddressMode.Implied, implied(), 6)
 
         /* SBC Opcodes */
         opcode[0xE9] = sbc(AddressMode.Immediate, immediate(), 2)
@@ -297,9 +301,13 @@ class Opcodes {
         push(data and 0xFF, it)
     }
 
-    private fun pull(it: CPU): Int {
+    private fun pop(it: CPU): Int {
         it.registers.S++
         return it.memory.read(0x100 or it.registers.S)
+    }
+
+    private fun pop16(it: CPU): Int {
+        return pop(it) or (pop(it) shl 16)
     }
 
     private fun adc(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
@@ -608,7 +616,7 @@ class Opcodes {
 
     private fun pla(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
-            it.registers.A = pull(it)
+            it.registers.A = pop(it)
             it.statusFlags.setZn(it.registers.A)
             it.cycles += cycles
         }
@@ -616,7 +624,7 @@ class Opcodes {
 
     private fun plp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
         it.apply {
-            it.statusFlags.toFlags(pull(it) and 0x10.inv())
+            it.statusFlags.toFlags(pop(it) and 0x10.inv())
             it.cycles += cycles
         }
     }
@@ -664,6 +672,21 @@ class Opcodes {
 
                 statusFlags.setZn(data)
             }
+        }
+    }
+
+    private fun rti(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.statusFlags.toFlags(pop(it))
+            it.registers.PC = pop16(it)
+            it.cycles += cycles
+        }
+    }
+
+    private fun rts(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.registers.PC = pop16(it) + 1
+            it.cycles += cycles
         }
     }
 
