@@ -129,7 +129,7 @@ data class StatusFlag (
                     (if (Zero) (1 shl 1) else 0) or
                     (if (Carry) 1 else 0)) and 0xFF
 
-    fun toFlags(status: Byte) {
+    fun toFlags(status: Int) {
         Carry = status.isBitSet(0)
         Zero = status.isBitSet(1)
         InterruptDisable = status.isBitSet(2)

@@ -169,6 +169,12 @@ class Opcodes {
         opcode[0x01] = ora(AddressMode.IndirectX, indirectX(), 6)
         opcode[0x11] = ora(AddressMode.IndirectY, indirectY(), 5)
 
+        /* PHA, PHP, PLA, PLP */
+        opcode[0x48] = pha(AddressMode.Implied, implied(), 3)
+        opcode[0x08] = php(AddressMode.Implied, implied(), 3)
+        opcode[0x68] = pla(AddressMode.Implied, implied(), 4)
+        opcode[0x28] = plp(AddressMode.Implied, implied(), 4)
+
         /* ROL Opcodes */
         opcode[0x2A] = rol(AddressMode.Accumulator, accumulator(), 2)
         opcode[0x26] = rol(AddressMode.ZeroPage, zeroPageAdr(), 5)
@@ -583,6 +589,35 @@ class Opcodes {
 
             it.statusFlags.setZn(it.registers.A)
             it.cycles += cycles + if (pageCrossed) 1 else 0
+        }
+    }
+
+    private fun pha(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            push(it.registers.A, it)
+            it.cycles += cycles
+        }
+    }
+
+    private fun php(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            push(it.statusFlags.asByte() or 0x10, it)
+            it.cycles += cycles
+        }
+    }
+
+    private fun pla(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.registers.A = pull(it)
+            it.statusFlags.setZn(it.registers.A)
+            it.cycles += cycles
+        }
+    }
+
+    private fun plp(mode: AddressMode, address: (CPU) -> Int, cycles: Int) = Opcode {
+        it.apply {
+            it.statusFlags.toFlags(pull(it) and 0x10.inv())
+            it.cycles += cycles
         }
     }
 
