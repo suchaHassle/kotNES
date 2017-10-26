@@ -306,7 +306,7 @@ class Opcodes {
     }
 
     private fun pop16(it: CPU): Int {
-        return pop(it) or (pop(it) shl 16)
+        return pop(it) or (pop(it) shl 8)
     }
 
     /* Opcode methods */
