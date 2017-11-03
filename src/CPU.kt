@@ -50,7 +50,10 @@ class CPU(memory: Memory) {
 
     fun reset() {
         registers.reset()
+        registers.PC = memory.read16(0xFFFC)
         statusFlags.reset()
+
+        cycles = 0
     }
 }
 
@@ -92,7 +95,6 @@ data class Register (
         Y = 0
         S = 0xFD
         P = 0
-        PC = 0xC000
     }
 
     fun tick(count: Int) {

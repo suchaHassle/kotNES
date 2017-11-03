@@ -8,6 +8,7 @@ class NES {
         var cartridge = Cartridge("xyene.nes")
         memory = Memory(cartridge)
         cpu = CPU(memory)
+        cpu.reset()
 
         while (true) {
             cpu.tick()
