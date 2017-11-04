@@ -268,38 +268,26 @@ class Opcodes {
 
     private fun indirectYAdr(): (CPU) -> Int = { it.memory.read(it.registers.PC + 1) and 0xFF }
     
-    private fun isPageCrossed(a: Int, b: Int): Boolean {
-        return a and 0xFF != b and 0xFF
-    }
+    private fun isPageCrossed(a: Int, b: Int): Boolean = a and 0xFF != b and 0xFF
 
     private fun branch(cond: Boolean, address: Int, it: CPU, cycles: Int) {
+        it.increment(cycles)
         if (cond) {
-            it.increment(cycles)
             it.cycles += 1 + if (isPageCrossed(it.registers.PC, address)) 1 else 0
             it.registers.PC = address
-        } else {
-            it.increment(cycles)
         }
     }
 
-    private fun push(data: Int, it: CPU) {
-        it.memory.write(0x100 or it.registers.S, data)
-        it.registers.S--
-    }
+    private fun push(data: Int, it: CPU) { it.memory.write(0x100 or it.registers.S--, data) }
 
     private fun push16(data: Int, it: CPU) {
         push(data shr 8, it)
         push(data and 0xFF, it)
     }
 
-    private fun pop(it: CPU): Int {
-        it.registers.S++
-        return it.memory.read(0x100 or it.registers.S)
-    }
+    private fun pop(it: CPU): Int = it.memory.read(0x100 or ++it.registers.S)
 
-    private fun pop16(it: CPU): Int {
-        return pop(it) or (pop(it) shl 8)
-    }
+    private fun pop16(it: CPU): Int = pop(it) or (pop(it) shl 8)
 
     /* Opcode methods */
 
@@ -322,10 +310,9 @@ class Opcodes {
 
     private fun and(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            it.registers.A = it.registers.A and it.memory.read(address)
+            it.registers.A = it.registers.A and it.memory.read(getAddress(mode, it))
             statusFlags.setZn(registers.A)
+            it.increment(cycles + if (pageCrossed) 1 else 0)
         }
     }
 
@@ -421,46 +408,29 @@ class Opcodes {
         }
     }
 
-    private fun cmp(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            val data = it.memory.read(address)
-            it.increment(cycles + if (pageCrossed) 1 else 0)
+    private fun cmpImpl(data: Int, cycles: Int, reg: Int, it: CPU) {
+        it.increment(cycles + if(pageCrossed) 1 else 0)
+        it.statusFlags.Carry = reg >= data
+        it.statusFlags.setZn(reg - data)
+    }
 
-            it.statusFlags.Carry = it.registers.A >= data
-            it.statusFlags.setZn(it.registers.A - data)
-        }
+    private fun cmp(mode: AddressMode, cycles: Int) = Opcode {
+        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.A, it) }
     }
 
     private fun cpx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            val data = it.memory.read(address)
-            it.increment(cycles)
-
-            it.statusFlags.Carry = it.registers.X >= data
-            it.statusFlags.setZn(it.registers.X - data)
-        }
+        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.X, it) }
     }
 
     private fun cpy(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            val data = it.memory.read(address)
-            it.increment(cycles)
-
-            it.statusFlags.Carry = it.registers.Y >= data
-            it.statusFlags.setZn(it.registers.Y - data)
-        }
+        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.Y, it) }
     }
 
     private fun dec(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             val address = getAddress(mode, it)
-            var data = it.memory.read(address)
+            var data = it.memory.read(address) - 1
             it.increment(cycles)
-
-            data--
             it.memory.write(address, data)
             it.statusFlags.setZn(data)
         }
@@ -469,16 +439,14 @@ class Opcodes {
     private fun dex(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             it.increment(cycles)
-            it.registers.X--
-            it.statusFlags.setZn(it.registers.X)
+            it.statusFlags.setZn(--it.registers.X)
         }
     }
 
     private fun dey(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             it.increment(cycles)
-            it.registers.Y--
-            it.statusFlags.setZn(it.registers.Y)
+            it.statusFlags.setZn(--it.registers.Y)
         }
     }
 
@@ -495,9 +463,8 @@ class Opcodes {
     private fun inc(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             val address = getAddress(mode, it)
-            var data = it.memory.read(address)
+            var data = it.memory.read(address) + 1
             it.increment(cycles)
-            data++
             it.memory.write(address, data)
             it.statusFlags.setZn(data)
         }
@@ -506,16 +473,14 @@ class Opcodes {
     private fun inx(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             it.increment(cycles)
-            it.registers.X++
-            it.statusFlags.setZn(it.registers.X)
+            it.statusFlags.setZn(++it.registers.X)
         }
     }
 
     private fun iny(mode: AddressMode, cycles: Int) = Opcode {
         it.apply {
             it.increment(cycles)
-            it.registers.Y++
-            it.statusFlags.setZn(it.registers.Y)
+            it.statusFlags.setZn(++it.registers.Y)
         }
     }
 

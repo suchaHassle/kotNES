@@ -40,13 +40,14 @@ class CPU(memory: Memory) {
         val initCycle = cycles
         opcode = memory.read(registers.PC)
         registers.P = statusFlags.asByte()
-        //println(java.lang.Integer.toHexString(registers.PC).toUpperCase()
-        //+ "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
-        //+ "        " + registers.toString())
+        println(String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase()).replace(' ', '0')
+        + "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
+        + "        " + registers.toString())
         opcodes.pageCrossed = false
 
-        opcodes.opcode[opcode]?.also {
+        opcodes.opcode[opcode].also {
             it.op(this)
+            it.
         }
 
         return cycles - initCycle
@@ -54,7 +55,8 @@ class CPU(memory: Memory) {
 
     fun reset() {
         registers.reset()
-        registers.PC = memory.read16(0xFFFC)
+        //registers.PC = memory.read16(0xFFFC)
+        registers.PC = 0xC000
         statusFlags.reset()
 
         cycles = 0
