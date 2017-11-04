@@ -23,25 +23,6 @@ class Opcodes {
         ZeroPageY
     }
 
-    var addressModes = intArrayOf(
-        6, 7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
-        1, 7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
-        6, 7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
-        6, 7, 6, 7, 11, 11, 11, 11, 6, 5, 4, 5, 8, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
-        5, 7, 5, 7, 11, 11, 11, 11, 6, 5, 6, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 13, 13, 6, 3, 6, 3, 2, 2, 3, 3,
-        5, 7, 5, 7, 11, 11, 11, 11, 6, 5, 6, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 13, 13, 6, 3, 6, 3, 2, 2, 3, 3,
-        5, 7, 5, 7, 11, 11, 11, 11, 6, 5, 6, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2,
-        5, 7, 5, 7, 11, 11, 11, 11, 6, 5, 6, 5, 1, 1, 1, 1,
-        10, 9, 6, 9, 12, 12, 12, 12, 6, 3, 6, 3, 2, 2, 2, 2
-    )
-
     init {
         /* ADC Opcodes */
         opcode[0x69] = adc(AddressMode.Immediate, 2)
@@ -258,19 +239,19 @@ class Opcodes {
     private fun getAddress(mode: AddressMode, it: CPU): Int = when (mode) {
         AddressMode.Absolute -> it.memory.read16(it.registers.PC + 1)
         AddressMode.AbsoluteX -> {
-            var address = it.memory.read16(it.registers.PC + 1) + it.registers.X
+            val address = it.memory.read16(it.registers.PC + 1) + it.registers.X
             pageCrossed = isPageCrossed(address - it.registers.X, it.registers.X)
             address and 0xFFFF
         }
         AddressMode.AbsoluteY -> {
-            var address = it.memory.read16(it.registers.PC + 1) + it.registers.Y
+            val address = it.memory.read16(it.registers.PC + 1) + it.registers.Y
             pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
             address and 0xFFFF
         }
         AddressMode.Indirect -> it.memory.read16wrap(it.memory.read16(it.registers.PC + 1))
         AddressMode.IndirectX -> it.memory.read16wrap(indirectXAdr()(it))
         AddressMode.IndirectY -> {
-            var address = it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y
+            val address = it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y
             pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
             address and 0xFFFF
         }
@@ -302,7 +283,7 @@ class Opcodes {
     private fun adc(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             // https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
-            var mem = memory.read(getAddress(mode, this))
+            val mem = memory.read(getAddress(mode, this))
             increment(cycles + if (pageCrossed) 1 else 0)
             val carry = if (statusFlags.Carry) 1 else 0
 
@@ -335,7 +316,7 @@ class Opcodes {
 
                 statusFlags.setZn(registers.A)
             } else {
-                var data = memory.read(address)
+                val data = memory.read(address)
                 statusFlags.Carry = data.isBitSet(7)
 
                 memory.write(address, (data shl 1))
@@ -368,9 +349,8 @@ class Opcodes {
 
     private fun bit(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            val address = getAddress(mode, this)
+            val data = memory.read(getAddress(mode, this))
             increment(cycles)
-            var data = memory.read(address)
 
             statusFlags.Negative = data.isBitSet(7)
             statusFlags.Overflow = data.isBitSet(6)
@@ -437,7 +417,7 @@ class Opcodes {
     private fun dec(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             val address = getAddress(mode, this)
-            var data = memory.read(address) - 1
+            val data = memory.read(address) - 1
             increment(cycles)
             memory.write(address, data)
             statusFlags.setZn(data)
@@ -471,7 +451,7 @@ class Opcodes {
     private fun inc(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             val address = getAddress(mode, this)
-            var data = memory.read(address) + 1
+            val data = memory.read(address) + 1
             increment(cycles)
             memory.write(address, data)
             statusFlags.setZn(data)
@@ -511,7 +491,7 @@ class Opcodes {
 
     private fun lda(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            var address = getAddress(mode, this)
+            val address = getAddress(mode, this)
             increment(cycles + if(pageCrossed) 1 else 0)
             registers.A = memory.read(address)
             statusFlags.setZn(registers.A)
@@ -520,7 +500,7 @@ class Opcodes {
 
     private fun ldx(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            var address = getAddress(mode, this)
+            val address = getAddress(mode, this)
             increment(cycles + if(pageCrossed) 1 else 0)
 
             registers.X = memory.read(address)
@@ -530,7 +510,7 @@ class Opcodes {
 
     private fun ldy(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            var address = getAddress(mode, this)
+            val address = getAddress(mode, this)
             increment(cycles + if(pageCrossed) 1 else 0)
 
             registers.Y = memory.read(address)

@@ -2,14 +2,12 @@ package kotNES
 
 import isBitSet
 
-class CPU(memory: Memory) {
+class CPU(var memory: Memory) {
     var registers = Register()
     var statusFlags = StatusFlag()
     private var opcodes = Opcodes()
     private var opcode: Int = 0
     var cycles: Int = 0
-
-    var memory: Memory = memory
 
     private var instructionSizes: IntArray = intArrayOf(
      // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F

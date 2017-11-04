@@ -5,7 +5,6 @@ fun main(args: Array<String>) {
     var memory = Memory(cartridge)
     var cpu = CPU(memory)
     cpu.reset()
-    var i: Int = 0
 
     while(true) {
         cpu.tick()

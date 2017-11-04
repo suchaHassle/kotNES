@@ -25,7 +25,8 @@ class Cartridge(filePath: String) {
         // Parse Header
         stream.read(data, 0, data.size)
 
-        if (java.nio.ByteBuffer.wrap(data.copyOfRange(0,16)).order(java.nio.ByteOrder.LITTLE_ENDIAN).int != MAGIC_HEADER)
+        if (java.nio.ByteBuffer.wrap(data.copyOfRange(0,16)).order(
+                java.nio.ByteOrder.LITTLE_ENDIAN).int != MAGIC_HEADER)
             throw InvalidROM("Invalid ROM Signature")
 
         prgROMSize = data[4].toUnsignedInt() * 0x4000
@@ -39,10 +40,11 @@ class Cartridge(filePath: String) {
         mapper = data[6].toUnsignedInt() shr(4) or (data[7].toUnsignedInt()  and 0xF0)
 
         // Loading Prg ROM
-        var prgOffset = 16 + if ((flag6 and 0b100) == 0) 512 else 0
+        val prgOffset = 16 + if ((flag6 and 0b100) == 0) 512 else 0
         prgROM = data.copyOfRange(16, prgOffset + prgROMSize).map { it.toUnsignedInt() }.toIntArray()
 
-        if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset + prgROMSize + chrROMSize).map { it.toUnsignedInt() }.toIntArray()
+        if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset +
+                prgROMSize + chrROMSize).map { it.toUnsignedInt() }.toIntArray()
     }
 
     fun readPRGRom(address: Int): Int {

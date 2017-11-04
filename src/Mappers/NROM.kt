@@ -2,10 +2,7 @@ package kotNES.mapper
 
 import kotNES.Cartridge
 
-class NROM(cartridge: Cartridge) {
-
-    private var cartridge: Cartridge = cartridge
-
+class NROM(private var cartridge: Cartridge) {
     private fun toPrgROMAddress(address: Int): Int {
         return (address - 0x8000) % 0x4000
     }
@@ -18,6 +15,6 @@ class NROM(cartridge: Cartridge) {
 
     fun write(address: Int, value: Int) = when(address) {
         in 0x0000..0x1FFF -> cartridge.writeCHRRom(address, value)
-        else -> 0
+        else -> Unit
     }
 }
