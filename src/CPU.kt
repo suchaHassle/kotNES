@@ -14,7 +14,7 @@ class CPU(memory: Memory) {
 
     var memory: Memory = memory
 
-    var instructionSizes: IntArray = intArrayOf(
+    private var instructionSizes: IntArray = intArrayOf(
      // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         1,  2,  0,  0,  2,  2,  2,  0,  1,  2,  1,  0,  3,  3,  3,  0,  // 0
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0,  // 1
@@ -40,7 +40,9 @@ class CPU(memory: Memory) {
         val initCycle = cycles
         opcode = memory.read(registers.PC)
         registers.P = statusFlags.asByte()
-        println(java.lang.Integer.toHexString(registers.PC).toUpperCase() + "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0') + "        " + registers.toString())
+        //println(java.lang.Integer.toHexString(registers.PC).toUpperCase()
+        //+ "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
+        //+ "        " + registers.toString())
         opcodes.pageCrossed = false
 
         opcodes.opcode[opcode]?.also {

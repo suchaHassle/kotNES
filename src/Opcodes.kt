@@ -251,14 +251,9 @@ class Opcodes {
         AddressMode.Indirect -> it.memory.read16wrap(it.memory.read16(it.registers.PC + 1))
         AddressMode.IndirectX -> it.memory.read16wrap(indirectXAdr()(it))
         AddressMode.IndirectY -> {
-            val off = indirectYAdr()(it)
-            var address = it.memory.read(off) or (it.memory.read((off + 1) and 0xFF) shl 8)
-            pageCrossed = address and 0xFF00 != ((address + it.registers.Y) and 0xFF00)
-            (address + it.registers.Y) and 0xFFFF
-            /*
             var address = it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y
             pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
-            address*/
+            address and 0xFFFF
         }
         AddressMode.Immediate -> it.registers.PC + 1
         AddressMode.Relative -> it.registers.PC + it.memory.read(it.registers.PC + 1).toSignedByte() + 2

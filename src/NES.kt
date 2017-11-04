@@ -7,8 +7,7 @@ fun main(args: Array<String>) {
     cpu.reset()
     var i: Int = 0
 
-    while(i < 24000) {
+    while(true) {
         cpu.tick()
-        i++
     }
 }
