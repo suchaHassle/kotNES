@@ -1,7 +1,6 @@
 package kotNES
 
 import kotNES.mapper.NROM
-import toUnsignedInt
 
 /**
  * $0000-0800 - Internal RAM, 2KB chip in the NES
@@ -24,20 +23,11 @@ class Memory(cartridge: Cartridge) {
         else -> throw NotImplementedException("Only internal RAM Address right now: " + address)
     }
 
-    fun read16(address: Int): Int {
-        val lo = read(address)
-        val hi = read(address + 1)
-        return (hi shl 8) or lo
-    }
+    fun read16(address: Int): Int = (read(address + 1) shl 8) or read(address)
 
-    fun read16wrap(address: Int): Int {
-        if (address and 0xFF == 0xFF) {
-            val lo = read(address)
-            val hi = read(address and 0xFF.inv())
-
-            return (hi shl 8) or lo
-        }
-        return read16(address)
+    fun read16wrap(address: Int): Int = when {
+        address and 0xFF == 0xFF -> (read(address and 0xFF.inv()) shl 8) or read(address)
+        else ->read16(address)
     }
 
     fun write(address: Int, value: Int) {
