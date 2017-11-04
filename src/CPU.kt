@@ -9,11 +9,12 @@ class CPU(memory: Memory) {
     var registers = Register()
     var statusFlags = StatusFlag()
     var opcodes = Opcodes()
+    var opcode: Int = 0
     var cycles: Int = 0
 
     var memory: Memory = memory
 
-    private var instructionSizes: IntArray = intArrayOf(
+    var instructionSizes: IntArray = intArrayOf(
      // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         1,  2,  0,  0,  2,  2,  2,  0,  1,  2,  1,  0,  3,  3,  3,  0,  // 0
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0,  // 1
@@ -33,27 +34,36 @@ class CPU(memory: Memory) {
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0   // F
     )
 
+    class IllegalOpcode(override var message: String) : Exception()
+
     fun tick(): Int {
         val initCycle = cycles
-        var opcode = memory.read(registers.PC)
-        println("Executing opcode: " + opcode.toString())
+        opcode = memory.read(registers.PC)
+        registers.P = statusFlags.asByte()
+        println(java.lang.Integer.toHexString(registers.PC).toUpperCase() + "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0') + "        " + registers.toString())
         opcodes.pageCrossed = false
 
         opcodes.opcode[opcode]?.also {
             it.op(this)
         }
 
-        registers.tick(instructionSizes[opcode])
-
         return cycles - initCycle
     }
 
     fun reset() {
         registers.reset()
-        registers.PC = memory.read16(0xFFFC)
+        //registers.PC = memory.read16(0xFFFC)
+        registers.PC = 0xC000
         statusFlags.reset()
 
         cycles = 0
+    }
+
+    fun increment(cycle: Int) {
+        if (cycle == -1 && instructionSizes[opcode] == 0) throw IllegalOpcode("${java.lang.Integer.toHexString(opcode)} is not a legal opcode")
+
+        cycles += cycle
+        registers.tick(instructionSizes[opcode])
     }
 }
 
@@ -86,8 +96,8 @@ data class Register (
         set(value) { _P = value and 0xFF }
 
     var PC: Int
-        get() = _PC and 0xFF
-        set(value) { _PC = value and 0xFF }
+        get() = _PC and 0xFFFF
+        set(value) { _PC = value and 0xFFFF}
 
     fun reset() {
         A = 0
@@ -99,6 +109,14 @@ data class Register (
 
     fun tick(count: Int) {
         PC += count
+    }
+
+    override fun toString(): String {
+        return "A: ${String.format("%2s", java.lang.Integer.toHexString(A).toUpperCase()).replace(' ', '0')} " +
+                "X: ${String.format("%2s", java.lang.Integer.toHexString(X).toUpperCase()).replace(' ', '0')} " +
+                "Y: ${String.format("%2s", java.lang.Integer.toHexString(Y).toUpperCase()).replace(' ', '0')} " +
+                "P: ${String.format("%2s", java.lang.Integer.toHexString(P).toUpperCase()).replace(' ', '0')} " +
+                "SP: ${String.format("%2s", java.lang.Integer.toHexString(S).toUpperCase()).replace(' ', '0')}"
     }
 }
 
@@ -125,7 +143,6 @@ data class StatusFlag (
             ((if (Negative) (1 shl 7) else 0) or
                     (if (Overflow) (1 shl 6) else 0) or
                     (1 shl 5) or // Special logic needed for the B flag...
-                    (0 shl 4) or
                     (if (DecimalMode) (1 shl 3) else 0) or
                     (if (InterruptDisable) (1 shl 2) else 0) or
                     (if (Zero) (1 shl 1) else 0) or
@@ -141,6 +158,7 @@ data class StatusFlag (
     }
 
     fun setZn(value: Int) {
+        val value = value and 0xFF
         Zero = (value == 0)
         Negative = ((value shr 7) and 1) == 1
     }

@@ -1,17 +1,14 @@
 package kotNES
 
-class NES {
-    private lateinit var cpu: CPU
-    private lateinit var memory: Memory
+fun main(args: Array<String>) {
+    var cartridge = Cartridge("nestest.nes")
+    var memory = Memory(cartridge)
+    var cpu = CPU(memory)
+    cpu.reset()
+    var i: Int = 0
 
-    fun main(args: Array<String>) {
-        var cartridge = Cartridge("xyene.nes")
-        memory = Memory(cartridge)
-        cpu = CPU(memory)
-        cpu.reset()
-
-        while (true) {
-            cpu.tick()
-        }
+    while(i < 24000) {
+        cpu.tick()
+        i++
     }
 }

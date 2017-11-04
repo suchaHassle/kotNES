@@ -19,9 +19,9 @@ class Memory(cartridge: Cartridge) {
     private val internalRam = IntArray(0x800)
 
     fun read(address: Int): Int = when (address) {
-        in 0x000..0x1FFF -> internalRam[address and 0x800] and 0xFF
-        in 0x4020..0xFFFF -> mapper.read(address)
-        else -> throw NotImplementedException("Only internal RAM Address right now")
+        in 0x000..0x1FFF -> internalRam[address % 0x800] and 0xFF
+        in 0x4020..0xFFFF -> mapper.read(address) and 0xFF
+        else -> throw NotImplementedException("Only internal RAM Address right now: " + address)
     }
 
     fun read16(address: Int): Int {
@@ -42,7 +42,8 @@ class Memory(cartridge: Cartridge) {
 
     fun write(address: Int, value: Int) {
         when (address) {
-            in 0x000..0x1FFF -> internalRam[address and 0x800] = value and 0xFF
+            in 0x0000..0x1FFF -> internalRam[address % 0x800] = value
+            in 0x4020..0xFFFF -> mapper.write(address, value)
             else -> throw NotImplementedException("Only internal RAM Address right now")
         }
     }
