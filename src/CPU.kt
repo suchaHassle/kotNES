@@ -54,8 +54,7 @@ class CPU(memory: Memory) {
 
     fun reset() {
         registers.reset()
-        //registers.PC = memory.read16(0xFFFC)
-        registers.PC = 0xC000
+        registers.PC = memory.read16(0xFFFC)
         statusFlags.reset()
 
         cycles = 0
@@ -155,6 +154,7 @@ data class StatusFlag (
         Zero = status.isBitSet(1)
         InterruptDisable = status.isBitSet(2)
         DecimalMode = status.isBitSet(3)
+        BreakCommand = status.isBitSet(4)
         Overflow = status.isBitSet(6)
         Negative = status.isBitSet(7)
     }
