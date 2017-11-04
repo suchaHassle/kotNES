@@ -47,7 +47,6 @@ class CPU(memory: Memory) {
 
         opcodes.opcode[opcode].also {
             it.op(this)
-            it.
         }
 
         return cycles - initCycle

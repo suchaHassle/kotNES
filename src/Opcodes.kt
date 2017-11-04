@@ -4,7 +4,7 @@ import isBitSet
 import toSignedByte
 
 class Opcodes {
-    val opcode = Array(0xFF, { Opcode { it.increment(-1) } })
+    val opcode = Array(0xFF, { Opcode { increment(-1) } })
     var pageCrossed: Boolean = false
 
     private enum class AddressMode {
@@ -292,34 +292,34 @@ class Opcodes {
     /* Opcode methods */
 
     private fun adc(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
+        this.apply {
             // https://stackoverflow.com/questions/29193303/6502-emulation-proper-way-to-implement-adc-and-sbc
-            var mem = it.memory.read(getAddress(mode, it))
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            val carry = if (it.statusFlags.Carry) 1 else 0
+            var mem = memory.read(getAddress(mode, this))
+            increment(cycles + if (pageCrossed) 1 else 0)
+            val carry = if (statusFlags.Carry) 1 else 0
 
-            val sum = it.registers.A + mem + carry
-            it.statusFlags.setZn(sum)
-            it.statusFlags.Carry = sum > 0xFF
+            val sum = registers.A + mem + carry
+            statusFlags.setZn(sum)
+            statusFlags.Carry = sum > 0xFF
 
-            it.statusFlags.Overflow = ((it.registers.A xor mem).inv() and (it.registers.A xor sum) and 0x80) != 0
+            statusFlags.Overflow = ((registers.A xor mem).inv() and (registers.A xor sum) and 0x80) != 0
 
-            it.registers.A = sum
+            registers.A = sum
         }
     }
 
     private fun and(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.registers.A = it.registers.A and it.memory.read(getAddress(mode, it))
+        this.apply {
+            registers.A = registers.A and memory.read(getAddress(mode, this))
             statusFlags.setZn(registers.A)
-            it.increment(cycles + if (pageCrossed) 1 else 0)
+            increment(cycles + if (pageCrossed) 1 else 0)
         }
     }
 
     private fun asl(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            var address = getAddress(mode, it)
-            it.increment(cycles + if (pageCrossed) 1 else 0)
+        this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles + if (pageCrossed) 1 else 0)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
@@ -337,74 +337,74 @@ class Opcodes {
         }
     }
 
-    private fun bcc(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Carry, getAddress(mode, it), it, cycles) } }
+    private fun bcc(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(!statusFlags.Carry, getAddress(mode, this), this, cycles) } }
 
-    private fun bcs(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Carry, getAddress(mode, it), it, cycles) } }
+    private fun bcs(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(statusFlags.Carry, getAddress(mode, this), this, cycles) } }
 
-    private fun beq(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Zero, getAddress(mode, it), it, cycles) } }
+    private fun beq(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(statusFlags.Zero, getAddress(mode, this), this, cycles) } }
 
-    private fun bne(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Zero, getAddress(mode, it), it, cycles) } }
+    private fun bne(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(!statusFlags.Zero, getAddress(mode, this), this, cycles) } }
 
-    private fun bmi(mode: AddressMode, cycles: Int) = Opcode { it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles)
-            it.registers.PC = if(it.statusFlags.Negative) address else it.registers.PC
+    private fun bmi(mode: AddressMode, cycles: Int) = Opcode { this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles)
+            registers.PC = if(statusFlags.Negative) address else registers.PC
         }
     }
 
-    private fun bpl(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Negative, getAddress(mode, it), it, cycles) } }
+    private fun bpl(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(!statusFlags.Negative, getAddress(mode, this), this, cycles) } }
 
-    private fun bvc(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(!it.statusFlags.Overflow, getAddress(mode, it), it, cycles) } }
+    private fun bvc(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(!statusFlags.Overflow, getAddress(mode, this), this, cycles) } }
 
-    private fun bvs(mode: AddressMode, cycles: Int) = Opcode { it.apply { branch(it.statusFlags.Overflow, getAddress(mode, it), it, cycles) } }
+    private fun bvs(mode: AddressMode, cycles: Int) = Opcode { this.apply { branch(statusFlags.Overflow, getAddress(mode, this), this, cycles) } }
 
     private fun bit(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles)
-            var data = it.memory.read(address)
+        this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles)
+            var data = memory.read(address)
 
-            it.statusFlags.Negative = data.isBitSet(7)
-            it.statusFlags.Overflow = data.isBitSet(6)
-            it.statusFlags.Zero = data and it.registers.A == 0
+            statusFlags.Negative = data.isBitSet(7)
+            statusFlags.Overflow = data.isBitSet(6)
+            statusFlags.Zero = data and registers.A == 0
         }
     }
 
     private fun brk(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            push16(it.registers.PC, it)
-            push(it.statusFlags.asByte(), it)
-            it.statusFlags.InterruptDisable = true
-            it.registers.PC += it.memory.read16(0xFFFE)
+        this.apply {
+            increment(cycles)
+            push16(registers.PC, this)
+            push(statusFlags.asByte(), this)
+            statusFlags.InterruptDisable = true
+            registers.PC += memory.read16(0xFFFE)
         }
     }
 
     private fun clc(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            it.statusFlags.Carry = false
+        this.apply {
+            increment(cycles + if (pageCrossed) 1 else 0)
+            statusFlags.Carry = false
         }
     }
 
     private fun cld(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            it.statusFlags.DecimalMode = false
+        this.apply {
+            increment(cycles + if (pageCrossed) 1 else 0)
+            statusFlags.DecimalMode = false
         }
     }
 
     private fun cli(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            it.statusFlags.InterruptDisable = false
+        this.apply {
+            increment(cycles + if (pageCrossed) 1 else 0)
+            statusFlags.InterruptDisable = false
         }
     }
 
     private fun clv(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if (pageCrossed) 1 else 0)
-            it.statusFlags.Overflow = false
+        this.apply {
+            increment(cycles + if (pageCrossed) 1 else 0)
+            statusFlags.Overflow = false
         }
     }
 
@@ -415,125 +415,125 @@ class Opcodes {
     }
 
     private fun cmp(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.A, it) }
+        this.apply { cmpImpl(memory.read(getAddress(mode, this)), cycles, registers.A, this) }
     }
 
     private fun cpx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.X, it) }
+        this.apply { cmpImpl(memory.read(getAddress(mode, this)), cycles, registers.X, this) }
     }
 
     private fun cpy(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply { cmpImpl(it.memory.read(getAddress(mode, it)), cycles, it.registers.Y, it) }
+        this.apply { cmpImpl(memory.read(getAddress(mode, this)), cycles, registers.Y, this) }
     }
 
     private fun dec(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            var data = it.memory.read(address) - 1
-            it.increment(cycles)
-            it.memory.write(address, data)
-            it.statusFlags.setZn(data)
+        this.apply {
+            val address = getAddress(mode, this)
+            var data = memory.read(address) - 1
+            increment(cycles)
+            memory.write(address, data)
+            statusFlags.setZn(data)
         }
     }
 
     private fun dex(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.setZn(--it.registers.X)
+        this.apply {
+            increment(cycles)
+            statusFlags.setZn(--registers.X)
         }
     }
 
     private fun dey(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.setZn(--it.registers.Y)
+        this.apply {
+            increment(cycles)
+            statusFlags.setZn(--registers.Y)
         }
     }
 
     private fun eor(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            val data = it.memory.read(address)
-            it.registers.A = (it.registers.A xor data) and 0xFF
-            it.statusFlags.setZn(it.registers.A)
-            it.increment(cycles + if (pageCrossed) 1 else 0)
+        this.apply {
+            val address = getAddress(mode, this)
+            val data = memory.read(address)
+            registers.A = (registers.A xor data) and 0xFF
+            statusFlags.setZn(registers.A)
+            increment(cycles + if (pageCrossed) 1 else 0)
         }
     }
 
     private fun inc(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            var data = it.memory.read(address) + 1
-            it.increment(cycles)
-            it.memory.write(address, data)
-            it.statusFlags.setZn(data)
+        this.apply {
+            val address = getAddress(mode, this)
+            var data = memory.read(address) + 1
+            increment(cycles)
+            memory.write(address, data)
+            statusFlags.setZn(data)
         }
     }
 
     private fun inx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.setZn(++it.registers.X)
+        this.apply {
+            increment(cycles)
+            statusFlags.setZn(++registers.X)
         }
     }
 
     private fun iny(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.setZn(++it.registers.Y)
+        this.apply {
+            increment(cycles)
+            statusFlags.setZn(++registers.Y)
         }
     }
 
     private fun jmp(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles)
-            it.registers.PC = address
+        this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles)
+            registers.PC = address
         }
     }
 
     private fun jsr(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles)
-            push16(it.registers.PC - 1, it)
-            it.registers.PC = address
+        this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles)
+            push16(registers.PC - 1, this)
+            registers.PC = address
         }
     }
 
     private fun lda(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            var address = getAddress(mode, it)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            it.registers.A = it.memory.read(address)
-            it.statusFlags.setZn(it.registers.A)
+        this.apply {
+            var address = getAddress(mode, this)
+            increment(cycles + if(pageCrossed) 1 else 0)
+            registers.A = memory.read(address)
+            statusFlags.setZn(registers.A)
         }
     }
 
     private fun ldx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            var address = getAddress(mode, it)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+        this.apply {
+            var address = getAddress(mode, this)
+            increment(cycles + if(pageCrossed) 1 else 0)
 
-            it.registers.X = it.memory.read(address)
-            it.statusFlags.setZn(it.registers.X)
+            registers.X = memory.read(address)
+            statusFlags.setZn(registers.X)
         }
     }
 
     private fun ldy(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            var address = getAddress(mode, it)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+        this.apply {
+            var address = getAddress(mode, this)
+            increment(cycles + if(pageCrossed) 1 else 0)
 
-            it.registers.Y = it.memory.read(address)
-            it.statusFlags.setZn(it.registers.Y)
+            registers.Y = memory.read(address)
+            statusFlags.setZn(registers.Y)
         }
     }
 
     private fun lsr(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val address = getAddress(mode, it)
-            it.increment(cycles)
+        this.apply {
+            val address = getAddress(mode, this)
+            increment(cycles)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = (registers.A and 1) == 1
@@ -553,51 +553,51 @@ class Opcodes {
 
     private fun nop(mode: AddressMode, cycles: Int) = Opcode {
         // Literally do nothing
-        it.apply { it.increment(cycles) }
+        this.apply { increment(cycles) }
     }
 
     private fun ora(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.registers.A = it.registers.A or it.memory.read(getAddress(mode, it))
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            it.statusFlags.setZn(it.registers.A)
+        this.apply {
+            registers.A = registers.A or memory.read(getAddress(mode, this))
+            increment(cycles + if(pageCrossed) 1 else 0)
+            statusFlags.setZn(registers.A)
         }
     }
 
     private fun pha(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            push(it.registers.A, it)
+        this.apply {
+            increment(cycles + if(pageCrossed) 1 else 0)
+            push(registers.A, this)
         }
     }
 
     private fun php(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            push(it.statusFlags.asByte() or 0x10, it)
+        this.apply {
+            increment(cycles + if(pageCrossed) 1 else 0)
+            push(statusFlags.asByte() or 0x10, this)
         }
     }
 
     private fun pla(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.A = pop(it)
-            it.statusFlags.setZn(it.registers.A)
+        this.apply {
+            increment(cycles)
+            registers.A = pop(this)
+            statusFlags.setZn(registers.A)
         }
     }
 
     private fun plp(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.toFlags(pop(it) and 0x10.inv())
+        this.apply {
+            increment(cycles)
+            statusFlags.toFlags(pop(this) and 0x10.inv())
         }
     }
 
     private fun rol(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
+        this.apply {
             val tempCarry = statusFlags.Carry
-            val address = getAddress(mode, it)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+            val address = getAddress(mode, this)
+            increment(cycles + if(pageCrossed) 1 else 0)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(7)
@@ -617,10 +617,10 @@ class Opcodes {
     }
 
     private fun ror(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
+        this.apply {
             val tempCarry = statusFlags.Carry
-            val address = getAddress(mode, it)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+            val address = getAddress(mode, this)
+            increment(cycles + if(pageCrossed) 1 else 0)
 
             if (mode == AddressMode.Accumulator) {
                 statusFlags.Carry = registers.A.isBitSet(0)
@@ -640,126 +640,126 @@ class Opcodes {
     }
 
     private fun rti(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
+        this.apply {
+            increment(cycles)
 
-            it.statusFlags.toFlags(pop(it))
-            it.registers.PC = pop16(it)
+            statusFlags.toFlags(pop(this))
+            registers.PC = pop16(this)
         }
     }
 
     private fun rts(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.PC = pop16(it) + 1
+        this.apply {
+            increment(cycles)
+            registers.PC = pop16(this) + 1
         }
     }
 
     private fun sbc(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            val mem = it.memory.read(getAddress(mode, it))
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            val carry = if(it.statusFlags.Carry) 0 else 1
+        this.apply {
+            val mem = memory.read(getAddress(mode, this))
+            increment(cycles + if(pageCrossed) 1 else 0)
+            val carry = if(statusFlags.Carry) 0 else 1
 
-            val difference = it.registers.A - mem - carry
-            it.statusFlags.setZn(difference)
+            val difference = registers.A - mem - carry
+            statusFlags.setZn(difference)
 
-            it.statusFlags.Carry = difference >= 0
-            it.statusFlags.Overflow = ((it.registers.A xor mem) and (it.registers.A xor difference) and 0x80) != 0
+            statusFlags.Carry = difference >= 0
+            statusFlags.Overflow = ((registers.A xor mem) and (registers.A xor difference) and 0x80) != 0
 
-            it.registers.A = difference
+            registers.A = difference
         }
     }
 
     private fun sec(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.Carry = true
+        this.apply {
+            increment(cycles)
+            statusFlags.Carry = true
         }
     }
 
     private fun sed(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.statusFlags.DecimalMode = true
+        this.apply {
+            increment(cycles)
+            statusFlags.DecimalMode = true
         }
     }
 
     private fun sei(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles + if(pageCrossed) 1 else 0)
-            it.statusFlags.InterruptDisable = true
+        this.apply {
+            increment(cycles + if(pageCrossed) 1 else 0)
+            statusFlags.InterruptDisable = true
         }
     }
 
     private fun sta(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.memory.write(getAddress(mode, it), it.registers.A)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+        this.apply {
+            memory.write(getAddress(mode, this), registers.A)
+            increment(cycles + if(pageCrossed) 1 else 0)
         }
     }
 
     private fun stx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.memory.write(getAddress(mode, it), it.registers.X)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+        this.apply {
+            memory.write(getAddress(mode, this), registers.X)
+            increment(cycles + if(pageCrossed) 1 else 0)
         }
     }
 
     private fun sty(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.memory.write(getAddress(mode, it), it.registers.Y)
-            it.increment(cycles + if(pageCrossed) 1 else 0)
+        this.apply {
+            memory.write(getAddress(mode, this), registers.Y)
+            increment(cycles + if(pageCrossed) 1 else 0)
         }
     }
 
     private fun tax(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.registers.X = it.registers.A
-            it.increment(cycles)
-            it.statusFlags.setZn(it.registers.X)
+        this.apply {
+            registers.X = registers.A
+            increment(cycles)
+            statusFlags.setZn(registers.X)
         }
     }
 
     private fun tay(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.Y = it.registers.A
-            it.statusFlags.setZn(it.registers.Y)
+        this.apply {
+            increment(cycles)
+            registers.Y = registers.A
+            statusFlags.setZn(registers.Y)
         }
     }
 
     private fun tsx(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.X = it.registers.S
-            it.statusFlags.setZn(it.registers.X)
+        this.apply {
+            increment(cycles)
+            registers.X = registers.S
+            statusFlags.setZn(registers.X)
         }
     }
 
     private fun txa(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.A = it.registers.X
-            it.statusFlags.setZn(it.registers.A)
+        this.apply {
+            increment(cycles)
+            registers.A = registers.X
+            statusFlags.setZn(registers.A)
         }
     }
 
     private fun tya(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.A = it.registers.Y
-            it.statusFlags.setZn(it.registers.A)
+        this.apply {
+            increment(cycles)
+            registers.A = registers.Y
+            statusFlags.setZn(registers.A)
         }
     }
 
     private fun txs(mode: AddressMode, cycles: Int) = Opcode {
-        it.apply {
-            it.increment(cycles)
-            it.registers.S = it.registers.X
+        this.apply {
+            increment(cycles)
+            registers.S = registers.X
         }
     }
 }
 
 
-class Opcode(val op: (CPU) -> Unit)
+class Opcode(val op: CPU.() -> Unit)
