@@ -1,9 +1,6 @@
 package kotNES
 
 import isBitSet
-import toSignedByte
-import toSignedShort
-import toUnsignedInt
 
 class CPU(memory: Memory) {
     var registers = Register()
@@ -40,12 +37,12 @@ class CPU(memory: Memory) {
         val initCycle = cycles
         opcode = memory.read(registers.PC)
         registers.P = statusFlags.asByte()
-        println(String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase()).replace(' ', '0')
-        + "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
-        + "        " + registers.toString())
+        //println(String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase()).replace(' ', '0')
+        //+ "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
+        //+ "        " + registers.toString())
         opcodes.pageCrossed = false
 
-        opcodes.opcode[opcode].also {
+        opcodes.opcode[opcode].apply{  }.also {
             it.op(this)
         }
 
@@ -67,6 +64,17 @@ class CPU(memory: Memory) {
         cycles += cycle
         registers.tick(instructionSizes[opcode])
     }
+
+    fun push(data: Int) { memory.write(0x100 or registers.S--, data) }
+
+    fun push16(data: Int) {
+        push(data shr 8)
+        push(data and 0xFF)
+    }
+
+    fun pop(): Int = memory.read(0x100 or ++registers.S)
+
+    fun pop16(): Int = pop() or (pop() shl 8)
 }
 
 data class Register (

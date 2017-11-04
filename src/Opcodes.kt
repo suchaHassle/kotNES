@@ -278,17 +278,6 @@ class Opcodes {
         }
     }
 
-    private fun push(data: Int, it: CPU) { it.memory.write(0x100 or it.registers.S--, data) }
-
-    private fun push16(data: Int, it: CPU) {
-        push(data shr 8, it)
-        push(data and 0xFF, it)
-    }
-
-    private fun pop(it: CPU): Int = it.memory.read(0x100 or ++it.registers.S)
-
-    private fun pop16(it: CPU): Int = pop(it) or (pop(it) shl 8)
-
     /* Opcode methods */
 
     private fun adc(mode: AddressMode, cycles: Int) = Opcode {
@@ -373,8 +362,8 @@ class Opcodes {
     private fun brk(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles)
-            push16(registers.PC, this)
-            push(statusFlags.asByte(), this)
+            push16(registers.PC)
+            push(statusFlags.asByte())
             statusFlags.InterruptDisable = true
             registers.PC += memory.read16(0xFFFE)
         }
@@ -496,7 +485,7 @@ class Opcodes {
         this.apply {
             val address = getAddress(mode, this)
             increment(cycles)
-            push16(registers.PC - 1, this)
+            push16(registers.PC - 1)
             registers.PC = address
         }
     }
@@ -567,21 +556,21 @@ class Opcodes {
     private fun pha(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles + if(pageCrossed) 1 else 0)
-            push(registers.A, this)
+            push(registers.A)
         }
     }
 
     private fun php(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles + if(pageCrossed) 1 else 0)
-            push(statusFlags.asByte() or 0x10, this)
+            push(statusFlags.asByte() or 0x10)
         }
     }
 
     private fun pla(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles)
-            registers.A = pop(this)
+            registers.A = pop()
             statusFlags.setZn(registers.A)
         }
     }
@@ -589,7 +578,7 @@ class Opcodes {
     private fun plp(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles)
-            statusFlags.toFlags(pop(this) and 0x10.inv())
+            statusFlags.toFlags(pop() and 0x10.inv())
         }
     }
 
@@ -643,15 +632,15 @@ class Opcodes {
         this.apply {
             increment(cycles)
 
-            statusFlags.toFlags(pop(this))
-            registers.PC = pop16(this)
+            statusFlags.toFlags(pop())
+            registers.PC = pop16()
         }
     }
 
     private fun rts(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             increment(cycles)
-            registers.PC = pop16(this) + 1
+            registers.PC = pop16() + 1
         }
     }
 
