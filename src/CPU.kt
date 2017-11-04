@@ -5,8 +5,8 @@ import isBitSet
 class CPU(memory: Memory) {
     var registers = Register()
     var statusFlags = StatusFlag()
-    var opcodes = Opcodes()
-    var opcode: Int = 0
+    private var opcodes = Opcodes()
+    private var opcode: Int = 0
     var cycles: Int = 0
 
     var memory: Memory = memory
@@ -42,7 +42,7 @@ class CPU(memory: Memory) {
         //+ "        " + registers.toString())
         opcodes.pageCrossed = false
 
-        opcodes.opcode[opcode].apply{  }.also {
+        opcodes.opcode[opcode].also {
             it.op(this)
         }
 
