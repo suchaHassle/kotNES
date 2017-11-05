@@ -2,6 +2,7 @@ package kotNES
 
 import isBitSet
 import kotNES.Opcodes.AddressMode
+import toHexString
 
 class CPU(var memory: Memory) {
     var registers = Register()
@@ -55,9 +56,7 @@ class CPU(var memory: Memory) {
     }
 
     override fun toString(): String {
-        return String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase())
-                .replace(' ', '0') + "  " + String.format("%2s",
-                java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0') +
+        return registers.PC.toHexString() + "  " + opcode.toHexString() +
                 "        " + registers.toString() + " "
     }
 
@@ -117,13 +116,9 @@ data class Register (
         PC += count
     }
 
-    override fun toString(): String {
-        return "A: ${String.format("%2s", java.lang.Integer.toHexString(A).toUpperCase()).replace(' ', '0')} " +
-                "X: ${String.format("%2s", java.lang.Integer.toHexString(X).toUpperCase()).replace(' ', '0')} " +
-                "Y: ${String.format("%2s", java.lang.Integer.toHexString(Y).toUpperCase()).replace(' ', '0')} " +
-                "P: ${String.format("%2s", java.lang.Integer.toHexString(P).toUpperCase()).replace(' ', '0')} " +
-                "SP: ${String.format("%2s", java.lang.Integer.toHexString(S).toUpperCase()).replace(' ', '0')}"
-    }
+    override fun toString(): String =
+            "A: ${A.toHexString()} " + "X: ${X.toHexString()} " + "Y: ${Y.toHexString()} " +
+                "P: ${P.toHexString()} " + "SP: ${S.toHexString()}"
 }
 
 data class StatusFlag (

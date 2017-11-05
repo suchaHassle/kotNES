@@ -21,6 +21,9 @@ class Cartridge(filePath: String) {
     private var prgROM: IntArray
     private lateinit var chrROM: IntArray
 
+    class InvalidROM(override var message: String) : Exception()
+    class NoCHRRomException(override var message: String) : Exception()
+
     init {
         // Parse Header
         stream.read(data, 0, data.size)
@@ -47,23 +50,14 @@ class Cartridge(filePath: String) {
                 prgROMSize + chrROMSize).map { it.toUnsignedInt() }.toIntArray()
     }
 
-    fun readPRGRom(address: Int): Int {
-        return prgROM[address]
+    fun readPRGRom(address: Int): Int = prgROM[address]
+
+    fun readCHRRom(address: Int): Int = when {
+        chrROMSize != 0 -> chrROM[address] and 0xFF
+        else -> throw NoCHRRomException("There's no CHR ROM")
     }
 
-    fun readCHRRom(address: Int): Int {
-        return if (chrROMSize != 0) chrROM[address] and 0xFF
-        else throw NoCHRRomException("There's no CHR ROM")
-    }
+    fun writeCHRRom(address: Int, value: Int) { chrROM[address] = value }
 
-    fun writeCHRRom(address: Int, value: Int) {
-        chrROM[address] = value
-    }
-
-    override fun toString(): String {
-        return "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: $mapper"
-    }
+    override fun toString(): String = "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: $mapper"
 }
-
-class InvalidROM(override var message: String) : Exception()
-class NoCHRRomException(override var message: String) : Exception()
