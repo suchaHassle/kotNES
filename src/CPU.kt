@@ -1,12 +1,13 @@
 package kotNES
 
 import isBitSet
+import kotNES.Opcodes.AddressMode
 
 class CPU(var memory: Memory) {
     var registers = Register()
     var statusFlags = StatusFlag()
     private var opcodes = Opcodes()
-    private var opcode: Int = 0
+    var opcode: Int = 0
     var cycles: Int = 0
 
     private var instructionSizes: IntArray = intArrayOf(
@@ -29,20 +30,17 @@ class CPU(var memory: Memory) {
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0   // F
     )
 
-    class IllegalOpcode(override var message: String) : Exception()
-
     fun tick(): Int {
         val initCycle = cycles
         opcode = memory.read(registers.PC)
         registers.P = statusFlags.asByte()
-        //println(String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase()).replace(' ', '0')
-        //+ "  " + String.format("%2s", java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0')
-        //+ "        " + registers.toString())
+        println(toString())
         opcodes.pageCrossed = false
 
-        opcodes.opcode[opcode].also {
-            it.op(this)
-        }
+        val address: Int = opcodes.getAddress(AddressMode.values()[opcodes.addressModes[opcode] - 1], this)
+        registers.tick(instructionSizes[opcode])
+
+        opcodes.opcode[opcode].also { it.op(this, address) }
 
         return cycles - initCycle
     }
@@ -56,11 +54,11 @@ class CPU(var memory: Memory) {
         cycles = 0
     }
 
-    fun increment(cycle: Int) {
-        if (cycle == -1 && instructionSizes[opcode] == 0) throw IllegalOpcode("${java.lang.Integer.toHexString(opcode)} is not a legal opcode")
-
-        cycles += cycle
-        registers.tick(instructionSizes[opcode])
+    override fun toString(): String {
+        return String.format("%4s", java.lang.Integer.toHexString(registers.PC).toUpperCase())
+                .replace(' ', '0') + "  " + String.format("%2s",
+                java.lang.Integer.toHexString(opcode).toUpperCase()).replace(' ', '0') +
+                "        " + registers.toString() + " "
     }
 
     fun push(data: Int) { memory.write(0x100 or registers.S--, data) }
