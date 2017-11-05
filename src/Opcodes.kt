@@ -3,6 +3,7 @@ package kotNES
 import isBitSet
 import toSignedByte
 
+@Suppress("UNUSED_PARAMETER")
 class Opcodes {
     class IllegalOpcode(override var message: String) : Exception()
     var pageCrossed: Boolean = false
