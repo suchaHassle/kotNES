@@ -68,7 +68,11 @@ class Opcodes {
         opcode[0x31] = and(AddressMode.IndirectY, 5)
 
         /* ASL Opcodes */
-        opcode[0x0A] = asl(AddressMode.Accumulator, 2)
+        opcode[0x0A] = Opcode { this.apply {
+            statusFlags.Carry = registers.A.isBitSet(7)
+            registers.A = registers.A shl 1
+            statusFlags.setZn(registers.A)
+        }.also { this.cycles += 2 }} // Accumulator
         opcode[0x06] = asl(AddressMode.ZeroPage, 5)
         opcode[0x16] = asl(AddressMode.ZeroPageX, 6)
         opcode[0x0E] = asl(AddressMode.Absolute, 6)
@@ -173,7 +177,11 @@ class Opcodes {
         opcode[0xBC] = ldy(AddressMode.AbsoluteX, 4)
 
         /* LSR Opcodes */
-        opcode[0x4A] = lsr(AddressMode.Accumulator, 2)
+        opcode[0x4A] = Opcode { this.apply {
+            statusFlags.Carry = (registers.A and 1) == 1
+            registers.A = registers.A shr 1
+            statusFlags.setZn(registers.A)
+        }.also { this.cycles += 2 }} // Accumulator
         opcode[0x46] = lsr(AddressMode.ZeroPage, 5)
         opcode[0x56] = lsr(AddressMode.ZeroPageX, 6)
         opcode[0x4E] = lsr(AddressMode.Absolute, 6)
@@ -199,14 +207,25 @@ class Opcodes {
         opcode[0x28] = plp(AddressMode.Implied, 4)
 
         /* ROL Opcodes */
-        opcode[0x2A] = rol(AddressMode.Accumulator, 2)
+        opcode[0x2A] = Opcode { this.apply {
+            val tempCarry = statusFlags.Carry
+            statusFlags.Carry = registers.A.isBitSet(7)
+            registers.A = (registers.A shl 1) or (if (tempCarry) 1 else 0)
+            statusFlags.setZn(registers.A)
+        }.also { this.cycles += 2 }} // Accumulator
         opcode[0x26] = rol(AddressMode.ZeroPage, 5)
         opcode[0x36] = rol(AddressMode.ZeroPageX, 6)
         opcode[0x2E] = rol(AddressMode.Absolute, 6)
         opcode[0x3E] = rol(AddressMode.AbsoluteX, 7)
 
         /* ROR Opcodes */
-        opcode[0x6A] = ror(AddressMode.Accumulator, 2)
+        opcode[0x6A] = Opcode { this.apply {
+            val tempCarry = statusFlags.Carry
+            statusFlags.Carry = registers.A.isBitSet(0)
+            registers.A = (registers.A shr 1) or (if (tempCarry) 0x80 else 0)
+
+            statusFlags.setZn(registers.A)
+        }.also { this.cycles += 2 }} // Accumulator
         opcode[0x66] = ror(AddressMode.ZeroPage, 5)
         opcode[0x76] = ror(AddressMode.ZeroPageX, 6)
         opcode[0x6E] = ror(AddressMode.Absolute, 6)
@@ -327,19 +346,12 @@ class Opcodes {
 
     private fun asl(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = registers.A.isBitSet(7)
-                registers.A = registers.A shl 1
+            val data = memory.read(it)
+            statusFlags.Carry = data.isBitSet(7)
 
-                statusFlags.setZn(registers.A)
-            } else {
-                val data = memory.read(it)
-                statusFlags.Carry = data.isBitSet(7)
+            memory.write(it, (data shl 1))
 
-                memory.write(it, (data shl 1))
-
-                statusFlags.setZn(data shl 1)
-            }
+            statusFlags.setZn(data shl 1)
         }.also { this.cycles += cycles }
     }
 
@@ -497,19 +509,12 @@ class Opcodes {
 
     private fun lsr(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = (registers.A and 1) == 1
-                registers.A = registers.A shr 1
+            val data = memory.read(it)
+            statusFlags.Carry = (data and 1) == 1
 
-                statusFlags.setZn(registers.A)
-            } else {
-                val data = memory.read(it)
-                statusFlags.Carry = (data and 1) == 1
+            memory.write(it, (data shr 1))
 
-                memory.write(it, (data shr 1))
-
-                statusFlags.setZn(data shr 1)
-            }
+            statusFlags.setZn(data shr 1)
         }.also { this.cycles += cycles }
     }
 
@@ -547,42 +552,26 @@ class Opcodes {
     private fun rol(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             val tempCarry = statusFlags.Carry
+            var data = memory.read(it)
+            statusFlags.Carry = data.isBitSet(7)
 
-            if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = registers.A.isBitSet(7)
-                registers.A = (registers.A shl 1) or (if (tempCarry) 1 else 0)
+            data = (data shl 1) or (if (tempCarry) 1 else 0)
 
-                statusFlags.setZn(registers.A)
-            } else {
-                var data = memory.read(it)
-                statusFlags.Carry = data.isBitSet(7)
-
-                data = (data shl 1) or (if (tempCarry) 1 else 0)
-
-                memory.write(it, data)
-                statusFlags.setZn(data)
-            }
+            memory.write(it, data)
+            statusFlags.setZn(data)
         }.also { this.cycles += cycles }
     }
 
     private fun ror(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             val tempCarry = statusFlags.Carry
+            var data = memory.read(it)
+            statusFlags.Carry = data.isBitSet(0)
 
-            if (mode == AddressMode.Accumulator) {
-                statusFlags.Carry = registers.A.isBitSet(0)
-                registers.A = (registers.A shr 1) or (if (tempCarry) 0x80 else 0)
+            data = (data shr 1) or (if (tempCarry) 0x80 else 0)
 
-                statusFlags.setZn(registers.A)
-            } else {
-                var data = memory.read(it)
-                statusFlags.Carry = data.isBitSet(0)
-
-                data = (data shr 1) or (if (tempCarry) 0x80 else 0)
-
-                memory.write(it, data)
-                statusFlags.setZn(data)
-            }
+            memory.write(it, data)
+            statusFlags.setZn(data)
         }.also { this.cycles += cycles }
     }
 
