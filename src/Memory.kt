@@ -23,11 +23,11 @@ class Memory(cartridge: Cartridge) {
         else -> throw NotImplementedException("Only internal RAM Address right now: " + address)
     }
 
-    fun read16(address: Int): Int = (read(address + 1) shl 8) or read(address)
+    fun readWord(address: Int): Int = (read(address + 1) shl 8) or read(address)
 
-    fun read16wrap(address: Int): Int = when {
+    fun readWordWrap(address: Int): Int = when {
         address and 0xFF == 0xFF -> (read(address and 0xFF.inv()) shl 8) or read(address)
-        else ->read16(address)
+        else -> readWord(address)
     }
 
     fun write(address: Int, value: Int) {

@@ -280,21 +280,21 @@ class Opcodes {
     /* Address mode memory address */
 
     fun getAddress(mode: AddressMode, it: CPU): Int = when (mode) {
-        AddressMode.Absolute -> it.memory.read16(it.registers.PC + 1)
+        AddressMode.Absolute -> it.memory.readWord(it.registers.PC + 1)
         AddressMode.AbsoluteX -> {
-            val address = it.memory.read16(it.registers.PC + 1) + it.registers.X
+            val address = it.memory.readWord(it.registers.PC + 1) + it.registers.X
             pageCrossed = isPageCrossed(address - it.registers.X, it.registers.X)
             address and 0xFFFF
         }
         AddressMode.AbsoluteY -> {
-            val address = it.memory.read16(it.registers.PC + 1) + it.registers.Y
+            val address = it.memory.readWord(it.registers.PC + 1) + it.registers.Y
             pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
             address and 0xFFFF
         }
-        AddressMode.Indirect -> it.memory.read16wrap(it.memory.read16(it.registers.PC + 1))
-        AddressMode.IndirectX -> it.memory.read16wrap(indirectXAdr()(it))
+        AddressMode.Indirect -> it.memory.readWordWrap(it.memory.readWord(it.registers.PC + 1))
+        AddressMode.IndirectX -> it.memory.readWordWrap(indirectXAdr()(it))
         AddressMode.IndirectY -> {
-            val address = it.memory.read16wrap(indirectYAdr()(it)) + it.registers.Y
+            val address = it.memory.readWordWrap(indirectYAdr()(it)) + it.registers.Y
             pageCrossed = isPageCrossed(address - it.registers.Y, it.registers.Y)
             address and 0xFFFF
         }
@@ -399,10 +399,10 @@ class Opcodes {
 
     private fun brk(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
-            push16(registers.PC)
+            pushWord(registers.PC)
             push(statusFlags.asByte())
             statusFlags.InterruptDisable = true
-            registers.PC += memory.read16(0xFFFE)
+            registers.PC += memory.readWord(0xFFFE)
         }.also { this.cycles += cycles }
     }
 
@@ -484,7 +484,7 @@ class Opcodes {
     }
 
     private fun jsr(mode: AddressMode, cycles: Int) = Opcode {
-        this.apply { push16(registers.PC - 1); registers.PC = it }.also { this.cycles += cycles }
+        this.apply { pushWord(registers.PC - 1); registers.PC = it }.also { this.cycles += cycles }
     }
 
     private fun lda(mode: AddressMode, cycles: Int) = Opcode {
@@ -579,12 +579,12 @@ class Opcodes {
     private fun rti(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             statusFlags.toFlags(pop())
-            registers.PC = pop16()
+            registers.PC = popWord()
         }.also { this.cycles += cycles }
     }
 
     private fun rts(mode: AddressMode, cycles: Int) = Opcode {
-        this.apply { registers.PC = pop16() + 1 }.also { this.cycles += cycles }
+        this.apply { registers.PC = popWord() + 1 }.also { this.cycles += cycles }
     }
 
     private fun sbc(mode: AddressMode, cycles: Int) = Opcode {

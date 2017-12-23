@@ -48,7 +48,7 @@ class CPU(var memory: Memory) {
 
     fun reset() {
         registers.reset()
-        //registers.PC = memory.read16(0xFFFC)
+        //registers.PC = memory.readWord(0xFFFC)
         registers.PC = 0xC000
         statusFlags.reset()
 
@@ -62,14 +62,14 @@ class CPU(var memory: Memory) {
 
     fun push(data: Int) { memory.write(0x100 or registers.S--, data) }
 
-    fun push16(data: Int) {
+    fun pushWord(data: Int) {
         push(data shr 8)
         push(data and 0xFF)
     }
 
     fun pop(): Int = memory.read(0x100 or ++registers.S)
 
-    fun pop16(): Int = pop() or (pop() shl 8)
+    fun popWord(): Int = pop() or (pop() shl 8)
 }
 
 data class Register (
@@ -117,8 +117,8 @@ data class Register (
     }
 
     override fun toString(): String =
-            "A: ${A.toHexString()} " + "X: ${X.toHexString()} " + "Y: ${Y.toHexString()} " +
-                "P: ${P.toHexString()} " + "SP: ${S.toHexString()}"
+            "A:${A.toHexString()} " + "X:${X.toHexString()} " + "Y:${Y.toHexString()} " +
+                "P:${P.toHexString()} " + "SP:${S.toHexString()}"
 }
 
 data class StatusFlag (
