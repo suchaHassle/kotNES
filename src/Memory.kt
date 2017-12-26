@@ -12,13 +12,14 @@ import kotNES.mapper.NROM
 
 class Memory(cartridge: Cartridge) {
     var mapper: NROM = NROM(cartridge)
+    var ppuMemory = PpuMemory()
 
     class NotImplementedException(override var message: String) : Exception()
 
     private val internalRam = IntArray(0x800)
 
     fun read(address: Int): Int = when (address) {
-        in 0x000..0x1FFF -> internalRam[address % 0x800] and 0xFF
+        in 0x0000..0x1FFF -> internalRam[address % 0x800] and 0xFF
         in 0x4020..0xFFFF -> mapper.read(address) and 0xFF
         else -> throw NotImplementedException("Only internal RAM Address right now: " + address)
     }
