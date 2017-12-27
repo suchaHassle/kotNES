@@ -20,7 +20,7 @@ class CpuMemory(var emulator: Emulator) {
 
     operator fun get(address: Int): Int = when (address) {
         in 0x0000..0x1FFF -> internalRam[address % 0x800] and 0xFF
-        in 0x2000..0x3FFF -> emulator.ppu.ppuMemory.readRegister(address % 8)
+        in 0x2000..0x3FFF -> emulator.ppu.ppuMemory.readRegister(address)
         in 0x4020..0xFFFF -> mapper.read(address) and 0xFF
         else -> throw NotImplementedException("Only internal RAM Address right now: " + address)
     }
@@ -35,7 +35,7 @@ class CpuMemory(var emulator: Emulator) {
     operator fun set(address: Int, value: Int) {
         when (address) {
             in 0x0000..0x1FFF -> internalRam[address % 0x800] = value
-            in 0x2000..0x3FFF -> emulator.ppu.ppuMemory.writeRegister(address % 8, value)
+            in 0x2000..0x3FFF -> emulator.ppu.ppuMemory.writeRegister(address, value)
             in 0x4020..0xFFFF -> mapper.write(address, value)
             else -> throw NotImplementedException("Only internal RAM Address right now")
         }

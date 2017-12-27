@@ -8,7 +8,7 @@ class PpuMemory(private var emulator: Emulator) {
     var paletteRam = IntArray(32)
     var oam = IntArray(256)
 
-    fun readRegister(address: Int): Int = when (address) {
+    fun readRegister(address: Int): Int = when ((address and 0x7) - 0x2000) {
         0 -> ppuFlags._lastWrittenRegister and 0xFF
         1 -> ppuFlags._lastWrittenRegister and 0xFF
         2 -> ppuFlags.PPUSTATUS and 0xFF
@@ -22,7 +22,7 @@ class PpuMemory(private var emulator: Emulator) {
 
     fun writeRegister(address: Int, value: Int) {
         ppuFlags._lastWrittenRegister = value and 0xFF
-        when (address) {
+        when ((address and 0x7) - 0x2000) {
             0 -> ppuFlags.PPUCTRL = value
             1 -> ppuFlags.PPUMASK = value
             2 -> return
