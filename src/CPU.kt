@@ -4,7 +4,7 @@ import isBitSet
 import kotNES.Opcodes.AddressMode
 import toHexString
 
-class CPU(var memory: Memory) {
+class CPU(var memory: CpuMemory) {
     var registers = Register()
     var statusFlags = StatusFlag()
     private var opcodes = Opcodes()
@@ -33,7 +33,7 @@ class CPU(var memory: Memory) {
 
     fun tick(): Int {
         val initCycle = cycles
-        opcode = memory.read(registers.PC)
+        opcode = memory[registers.PC]
         registers.P = statusFlags.asByte()
         println(toString())
         opcodes.pageCrossed = false
@@ -60,14 +60,14 @@ class CPU(var memory: Memory) {
                 "        " + registers.toString() + " "
     }
 
-    fun push(data: Int) { memory.write(0x100 or registers.S--, data) }
+    fun push(data: Int) { memory[0x100 or registers.S--] = data }
 
     fun pushWord(data: Int) {
         push(data shr 8)
         push(data and 0xFF)
     }
 
-    fun pop(): Int = memory.read(0x100 or ++registers.S)
+    fun pop(): Int = memory[0x100 or ++registers.S]
 
     fun popWord(): Int = pop() or (pop() shl 8)
 }

@@ -26,20 +26,25 @@ data class PpuFlags (
         var spriteOverflow: Boolean = false,
         var spriteZeroHit: Boolean = false,
         var vBlankStarted: Boolean = false,
-        var addressLatch: Boolean = false,
+        var writeToggle: Boolean = false,
 
         // PPUSCROLL
         var scrollX: Int = 0,
         var scrollY: Int = 0,
 
         // PPUADDR
-        var busAddress: Int = 0,
+        private var _busAddress: Int = 0,
 
+        // PPUDATA
+        private var readBuffer: Int = 0,
+
+        var busData: Int = 0,
+        var _oamAddress: Int = 0,
         var _lastWrittenRegister: Int = 0,
         var T: Int = 0,
         var X: Int = 0,
-        private var _V: Int = 0
-
+        private var _V: Int = 0,
+        var ppu: PpuMemory
 ) {
     var V: Int // 15 Bits
         get() = _V
@@ -47,25 +52,14 @@ data class PpuFlags (
             _V = value and 0x7FFF
         }
 
+    var busAddress: Int
+        get() = _busAddress
+        set(value) { _busAddress = value and 0x3FFF }
 
-    /*
-        7  bit  0
-        ---- ----
-        VPHB SINN
-        |||| ||||
-        |||| ||++- Base nametable address
-        |||| ||    (0 = $2000; 1 = $2400; 2 = $2800; 3 = $2C00)
-        |||| |+--- VRAM address increment per CPU read/write of PPUDATA
-        |||| |     (0: add 1, going across; 1: add 32, going down)
-        |||| +---- Sprite pattern table address for 8x8 sprites
-        ||||       (0: $0000; 1: $1000; ignored in 8x16 mode)
-        |||+------ Background pattern table address (0: $0000; 1: $1000)
-        ||+------- Sprite size (0: 8x8; 1: 8x16)
-        |+-------- PPU master/slave select
-        |          (0: read backdrop from EXT pins; 1: output color on EXT pins)
-        +--------- Generate an NMI at the start of the
-                   vertical blanking interval (0: off; 1: on)
-    */
+    var oamAddress: Int
+        get() = _oamAddress
+        set(value) { _oamAddress = value and 0xFF }
+
     var PPUCTRL: Int = 0
         set(value) {
             vramIncrement = if (value.isBitSet(2)) 32 else 1
@@ -78,21 +72,6 @@ data class PpuFlags (
             T = (T and 0xF3FF) or ((value and 0x3) shl 10)
         }
 
-
-    /*
-        7  bit  0
-        ---- ----
-        BGRs bMmG
-        |||| ||||
-        |||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
-        |||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
-        |||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
-        |||| +---- 1: Show background
-        |||+------ 1: Show sprites
-        ||+------- Emphasize red*
-        |+-------- Emphasize green*
-        +--------- Emphasize blue*
-    */
     var PPUMASK: Int = 0
         set(value) {
             grayscale = value.isBitSet(0)
@@ -107,7 +86,7 @@ data class PpuFlags (
 
     var PPUSTATUS: Int = 0
         get() {
-            addressLatch = false
+            writeToggle = false
             val ret = (_lastWrittenRegister and 0x1F) or
                     (spriteOverflow.asInt() shl 5) or
                     (spriteZeroHit.asInt() shl 6) or
@@ -119,7 +98,7 @@ data class PpuFlags (
 
     var PPUSCROLL: Int = 0
         set(value) {
-            if (addressLatch) {
+            if (writeToggle) {
                 scrollY = value
                 T = T and 0x8FFF or (value and 0x7 shl 12)
                 T = T and 0xFC1F or (value and 0xF8 shl 2)
@@ -128,18 +107,18 @@ data class PpuFlags (
                 X = value and 0x7
                 T = T and 0xFFE0 or (value shr 3)
             }
-            addressLatch = addressLatch xor true
+            writeToggle = writeToggle xor true
         }
 
     var PPUADDR: Int = 0
         set(value) {
-            if (addressLatch) {
+            if (writeToggle) {
                 T = (T and 0xFF00) or value
                 busAddress = T
                 V = T
             } else {
                 T = (T and 0x80FF) or ((value and 0x3F) shl 8)
             }
-            addressLatch = addressLatch xor true
+            writeToggle = writeToggle xor true
         }
 }

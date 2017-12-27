@@ -1,18 +1,19 @@
 package kotNES
 
 class PpuMemory {
-    var ppuFlags = PpuFlags()
+    var ppuFlags = PpuFlags(ppu=this)
+    var vRam = IntArray(2048)
 
-    operator fun get(address: Int) = when (address) {
+    fun readRegister(address: Int): Int = when (address) {
         0 -> ppuFlags._lastWrittenRegister and 0xFF
         1 -> ppuFlags._lastWrittenRegister and 0xFF
         2 -> ppuFlags.PPUSTATUS and 0xFF
         5 -> ppuFlags._lastWrittenRegister and 0xFF
         6 -> ppuFlags._lastWrittenRegister and 0xFF
-        else -> IllegalAccessError("This address is illegal, $address")
+        else -> throw IllegalAccessError("$address is not a valid address")
     }
 
-    operator fun set(address: Int, value: Int) {
+    fun writeRegister(address: Int, value: Int) {
         ppuFlags._lastWrittenRegister = value and 0xFF
         when (address) {
             0 -> ppuFlags.PPUCTRL = value
@@ -20,6 +21,7 @@ class PpuMemory {
             2 -> return
             5 -> ppuFlags.PPUSCROLL = value
             6 -> ppuFlags.PPUADDR = value
+            else -> throw IllegalAccessError("$address is not a valid address")
         }
     }
 }
