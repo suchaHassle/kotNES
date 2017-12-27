@@ -11,6 +11,7 @@ class PpuMemory(private var emulator: Emulator) {
         0 -> ppuFlags._lastWrittenRegister and 0xFF
         1 -> ppuFlags._lastWrittenRegister and 0xFF
         2 -> ppuFlags.PPUSTATUS and 0xFF
+        3 -> ppuFlags.OAMADDR and 0xFF
         5 -> ppuFlags._lastWrittenRegister and 0xFF
         6 -> ppuFlags._lastWrittenRegister and 0xFF
         7 -> ppuFlags.PPUDATA and 0xFF
@@ -23,6 +24,7 @@ class PpuMemory(private var emulator: Emulator) {
             0 -> ppuFlags.PPUCTRL = value
             1 -> ppuFlags.PPUMASK = value
             2 -> return
+            3 -> ppuFlags.OAMADDR = value
             5 -> ppuFlags.PPUSCROLL = value
             6 -> ppuFlags.PPUADDR = value
             7 -> ppuFlags.PPUDATA = value

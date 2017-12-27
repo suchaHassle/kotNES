@@ -140,4 +140,8 @@ data class PpuFlags (
             memory[busAddress] = value
             busAddress += vramIncrement
         }
+
+    var OAMADDR: Int
+        get() = oamAddress
+        set(value) { oamAddress = value }
 }

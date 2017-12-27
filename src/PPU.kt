@@ -1,5 +1,5 @@
 package kotNES
 
-class PPU(var emulator: Emulator) {
+class PPU(private var emulator: Emulator) {
     var ppuMemory = PpuMemory(emulator)
 }
