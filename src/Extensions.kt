@@ -1,4 +1,5 @@
 import kotNES.CPU
+import kotNES.PpuMemory
 
 /**
  * Credit to @alondero
@@ -58,4 +59,13 @@ private var instructionSizes: IntArray = intArrayOf(
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0   // F
 )
 
+private var vRamMirror = arrayOf(
+        intArrayOf(0, 0, 1, 1),
+        intArrayOf(0, 1, 0, 1),
+        intArrayOf(0, 1, 2, 3),
+        intArrayOf(0, 0, 0, 0),
+        intArrayOf(1, 1, 1, 1)
+)
+
 fun CPU.instructionSize(address: Int) = instructionSizes[address]
+fun PpuMemory.vRamMirrorLookup(i: Int, j: Int) = vRamMirror[i][j]

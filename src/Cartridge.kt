@@ -4,7 +4,6 @@ import toUnsignedInt
 import java.io.FileInputStream
 
 class Cartridge(filePath: String) {
-
     private val MAGIC_HEADER = 0x1A53454E
 
     private var stream = FileInputStream(filePath)
@@ -17,6 +16,8 @@ class Cartridge(filePath: String) {
     private val flag9: Int
     private val prgRAMSize: Int
     private val mapper: Int
+
+    val mirroringMode: Int
 
     private var prgROM: IntArray
     private lateinit var chrROM: IntArray
@@ -39,6 +40,8 @@ class Cartridge(filePath: String) {
         flag6 = data[6].toUnsignedInt()
         flag7 = data[7].toUnsignedInt()
         flag9 = data[9].toUnsignedInt()
+
+        mirroringMode = if (flag6 and 0x1 > 0) 1 else 0
 
         mapper = data[6].toUnsignedInt() shr(4) or (data[7].toUnsignedInt()  and 0xF0)
 
