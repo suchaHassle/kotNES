@@ -6,12 +6,14 @@ class PpuMemory(private var emulator: Emulator) {
     var ppuFlags = PpuFlags(memory=this)
     var vRam = IntArray(2048)
     var paletteRam = IntArray(32)
+    var oam = IntArray(256)
 
     fun readRegister(address: Int): Int = when (address) {
         0 -> ppuFlags._lastWrittenRegister and 0xFF
         1 -> ppuFlags._lastWrittenRegister and 0xFF
         2 -> ppuFlags.PPUSTATUS and 0xFF
         3 -> ppuFlags.OAMADDR and 0xFF
+        4 -> ppuFlags.OAMDATA and 0xFF
         5 -> ppuFlags._lastWrittenRegister and 0xFF
         6 -> ppuFlags._lastWrittenRegister and 0xFF
         7 -> ppuFlags.PPUDATA and 0xFF
@@ -25,6 +27,7 @@ class PpuMemory(private var emulator: Emulator) {
             1 -> ppuFlags.PPUMASK = value
             2 -> return
             3 -> ppuFlags.OAMADDR = value
+            4 -> ppuFlags.OAMDATA = value
             5 -> ppuFlags.PPUSCROLL = value
             6 -> ppuFlags.PPUADDR = value
             7 -> ppuFlags.PPUDATA = value

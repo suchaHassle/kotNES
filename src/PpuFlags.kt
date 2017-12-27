@@ -38,6 +38,8 @@ data class PpuFlags (
         // PPUDATA
         private var readBuffer: Int = 0,
 
+
+
         var busData: Int = 0,
         var _oamAddress: Int = 0,
         var _lastWrittenRegister: Int = 0,
@@ -144,4 +146,8 @@ data class PpuFlags (
     var OAMADDR: Int
         get() = oamAddress
         set(value) { oamAddress = value }
+
+    var OAMDATA: Int
+        get() = memory.oam[oamAddress]
+        set(value) { memory.oam[oamAddress++] = value }
 }
