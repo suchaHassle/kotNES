@@ -39,8 +39,7 @@ class PpuMemory(private var emulator: Emulator) {
         in 0x0000..0x1FFF -> emulator.memory[address]
         in 0x2000..0x2FFF -> vRam[getVramMirror(address)] and 0xFF
         in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] and 0xFF
-        in 0x3F00..0x3FFF -> paletteRam[((if (address == 0x3F10 || address == 0x3F14 || address == 0x3F18 || address == 0x3F0C)
-            address - 0x10 else address) - 0x3F00) and 0x1F]
+        in 0x3F00..0x3FFF -> paletteRam[(getPaletteRamIndex(address) - 0x3F00) and 0x1F]
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
@@ -48,13 +47,17 @@ class PpuMemory(private var emulator: Emulator) {
         in 0x0000..0x1FFF -> emulator.memory[address] = value
         in 0x2000..0x2FFF -> vRam[getVramMirror(address)] = value and 0xFF
         in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] = value and 0xFF
-        in 0x3F00..0x3FFF -> paletteRam[((if (address == 0x3F10 || address == 0x3F14 || address == 0x3F18 || address == 0x3F0C)
-            address - 0x10 else address) - 0x3F00) and 0x1F] = value
+        in 0x3F00..0x3FFF -> paletteRam[(getPaletteRamIndex(address) - 0x3F00) and 0x1F] = value
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
     private fun getVramMirror(address: Int): Int {
         return vRamMirrorLookup(emulator.cartridge.mirroringMode, ((address - 0x2000).div(0x400))) * 0x400 +
                 ((address - 0x2000).rem(0x400))
+    }
+
+    private fun getPaletteRamIndex(address: Int): Int = when (address) {
+        0x3F10, 0x3F14, 0x3F18, 0x3F0C -> address - 0x10
+        else -> address
     }
 }
