@@ -44,7 +44,7 @@ data class PpuFlags (
         var T: Int = 0,
         var X: Int = 0,
         private var _V: Int = 0,
-        var ppu: PpuMemory
+        var memory: PpuMemory
 ) {
     var V: Int // 15 Bits
         get() = _V
@@ -120,5 +120,24 @@ data class PpuFlags (
                 T = (T and 0x80FF) or ((value and 0x3F) shl 8)
             }
             writeToggle = writeToggle xor true
+        }
+
+    var PPUDATA: Int
+        get() {
+            var ret = memory[busAddress]
+            if (busAddress < 0x3F00) {
+                val temp = readBuffer
+                readBuffer = ret
+                ret = temp
+            } else {
+                readBuffer = memory[busAddress - 0x1000]
+            }
+            busAddress += vramIncrement
+            return ret
+        }
+        set(value) {
+            busData = value
+            memory[busAddress] = value
+            busAddress += vramIncrement
         }
 }

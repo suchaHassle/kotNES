@@ -2,8 +2,8 @@ package kotNES
 
 import vRamMirrorLookup
 
-class PpuMemory(var emulator: Emulator) {
-    var ppuFlags = PpuFlags(ppu=this)
+class PpuMemory(private var emulator: Emulator) {
+    var ppuFlags = PpuFlags(memory=this)
     var vRam = IntArray(2048)
     var paletteRam = IntArray(32)
 
@@ -13,6 +13,7 @@ class PpuMemory(var emulator: Emulator) {
         2 -> ppuFlags.PPUSTATUS and 0xFF
         5 -> ppuFlags._lastWrittenRegister and 0xFF
         6 -> ppuFlags._lastWrittenRegister and 0xFF
+        7 -> ppuFlags.PPUDATA and 0xFF
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
@@ -24,6 +25,7 @@ class PpuMemory(var emulator: Emulator) {
             2 -> return
             5 -> ppuFlags.PPUSCROLL = value
             6 -> ppuFlags.PPUADDR = value
+            7 -> ppuFlags.PPUDATA = value
             else -> throw IllegalAccessError("$address is not a valid address")
         }
     }
