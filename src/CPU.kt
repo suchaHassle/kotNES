@@ -11,6 +11,7 @@ class CPU(var memory: CpuMemory) {
     private var opcodes = Opcodes()
     var opcode: Int = 0
     var cycles: Int = 0
+    val cpuFrequency = 1789773
 
     fun tick(): Int {
         val initCycle = cycles

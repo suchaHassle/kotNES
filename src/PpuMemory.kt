@@ -35,6 +35,8 @@ class PpuMemory(private var emulator: Emulator) {
         }
     }
 
+    fun readPalleteRam(address: Int) = paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address]
+
     operator fun get(address: Int) = when (address) {
         in 0x0000..0x1FFF -> emulator.memory[address]
         in 0x2000..0x2FFF -> vRam[getVramMirror(address)] and 0xFF
