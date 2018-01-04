@@ -1,6 +1,7 @@
 package kotNES
 
 import palette
+import java.util.jar.Attributes
 
 private const val gameWidth = 256
 private const val gameHeight = 240
@@ -73,7 +74,29 @@ class PPU(private var emulator: Emulator) {
                 if (cycle == 256) incrementY()
                 if (cycle == 257) copyX()
             }
+
+            // Sprite Logic
+            if (cycle == 257) {
+                if (visibleLine) evaluateSprites()
+                else spriteCount = 0
+            }
         }
+
+        if (scanline == 241 && cycle == 1) setVerticalBlank()
+
+        if (preLine && cycle == 1) {
+            clearVerticalBlank()
+            ppuFlags.spriteZeroHit = false
+            ppuFlags.spriteOverflow = false
+        }
+    }
+
+    private fun clearVerticalBlank() {
+
+    }
+
+    private fun setVerticalBlank() {
+
     }
 
     private fun fetchNametableByte() {
@@ -85,6 +108,54 @@ class PPU(private var emulator: Emulator) {
         val address = 0x23C0 or (v and 0x0C00) or ((v shr 4) and 0x38) or ((v shr 2) and 0x07)
         val shift = ((v shr 4) and 4) or (v and 2)
         attributeTableByte = ((ppuMemory[address] shr shift) and 3) shl 2
+    }
+
+    private fun fetchSprite(tile: Int, attributes: Int, row: Int): Int {
+        var row = row
+        var tile = tile
+        val address: Int
+        val table: Int
+        var data: Int = 0
+
+        if (ppuFlags.spriteSize) {
+            if (attributes and 0x80 == 0x80) row = 15 - row
+            table = tile and 1
+            tile = tile and 0xFE
+            if (row > 7) {
+                tile++
+                row -= 8
+            }
+        } else {
+            if (attributes and 0x80 == 0x80) row = 7 - row
+            table = ppuFlags.spriteTableAddress
+        }
+
+        address = 0x1000 * table + 16 * tile + row
+        val a = (attributes and 3) shl 2
+        lowTileByte = ppuMemory[address]
+        highTileByte = ppuMemory[address + 8]
+
+        for (i in 0..7) {
+            val p1: Int
+            val p2: Int
+
+            if (attributes and 0x40 == 0x40) {
+                p1 = (lowTileByte and 1) shl 0
+                p2 = (highTileByte and 1) shl 1
+                lowTileByte = lowTileByte shr 1
+                highTileByte = highTileByte shr 1
+            } else {
+                p1 = (lowTileByte and 1) shr 7
+                p2 = (highTileByte and 1) shr 6
+                lowTileByte = lowTileByte shl 1
+                highTileByte = highTileByte shl 1
+            }
+
+            data = data shl 4
+            data = data or (a or p1 or p2)
+        }
+
+        return data
     }
 
     private fun fetchTileByte(hi: Boolean) {
@@ -110,6 +181,25 @@ class PPU(private var emulator: Emulator) {
 
     fun tick() {
 
+    }
+
+    private fun evaluateSprites() {
+        var h: Int = if (ppuFlags.spriteSize) 16 else 8
+        var count = 0
+
+        for (i in 0..63) {
+            val y = ppuMemory.oam[i*4] and 0xFF
+            val sprite = ppuMemory.oam[i*4+1]
+            val a = ppuMemory.oam[i*4 + 2] and 0xFF
+            val x = ppuMemory.oam[i*4 + 3] and 0xFF
+            val row = scanline - y
+
+            if (row in 0..(h-1)) {
+                if (count < 8) {
+                    spritePatterns[count] = fetchSprite(sprite, a, row)
+                }
+            }
+        }
     }
 
     private fun renderPixel() {
