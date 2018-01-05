@@ -12,6 +12,7 @@ class PPU(private var emulator: Emulator) {
     var ppuMemory = PpuMemory(emulator)
     var ppuFlags = ppuMemory.ppuFlags
     var bitMap = IntArray(gameWidth * gameHeight)
+    var frame: Long = 0
     var spritePositions = IntArray(8)
     var spritePatterns = IntArray(8)
     var spritePriorities = IntArray(8)
@@ -19,7 +20,6 @@ class PPU(private var emulator: Emulator) {
     var tileShiftRegister: Long = 0
 
     private var attributeTableByte = 0
-    private var bufferPos = 0
     private var cycle = 0
     private var highTileByte = 0
     private var lowTileByte = 0
@@ -36,8 +36,7 @@ class PPU(private var emulator: Emulator) {
     }
 
     fun step() {
-        bitMap.fill(0)
-        bufferPos = 0
+        tick()
 
         val renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
 
@@ -51,6 +50,12 @@ class PPU(private var emulator: Emulator) {
         val prefetchCycle = cycle in 321..336
         val visibleCycle = cycle in 1..256
         val fetchCycle = prefetchCycle || visibleCycle
+
+        if (preLine && cycle == 1) {
+            ppuFlags.vBlankStarted = false
+            ppuFlags.spriteZeroHit = false
+            ppuFlags.spriteOverflow = false
+        }
 
         if (renderingEnabled) {
             // Background Logic
@@ -81,22 +86,36 @@ class PPU(private var emulator: Emulator) {
                 else spriteCount = 0
             }
         }
+    }
 
-        if (scanline == 241 && cycle == 1) setVerticalBlank()
-
-        if (preLine && cycle == 1) {
-            clearVerticalBlank()
-            ppuFlags.spriteZeroHit = false
-            ppuFlags.spriteOverflow = false
+    private fun tick() {
+        if (scanline == 241 && cycle == 1) {
+            ppuFlags.vBlankStarted = true
+            if (ppuFlags.nmiOutput) emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
         }
-    }
 
-    private fun clearVerticalBlank() {
+        val renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
 
-    }
+        if (renderingEnabled) {
+            if (scanline == 261 && ppuFlags.F && cycle == 339) {
+                cycle = 0
+                scanline = 0
+                frame++
+                ppuFlags.F = !ppuFlags.F
+                return
+            }
+        }
 
-    private fun setVerticalBlank() {
-
+        cycle++
+        if (cycle > 340) {
+            cycle = 0
+            scanline++
+            if (scanline > 261) {
+                scanline = 0
+                frame++
+                ppuFlags.F = !ppuFlags.F
+            }
+        }
     }
 
     private fun fetchNametableByte() {
@@ -176,11 +195,7 @@ class PPU(private var emulator: Emulator) {
             data = data shl 4
             data = data or (attributeTableByte or p1 or p2)
         }
-        tileData = data as Long
-    }
-
-    fun tick() {
-
+        tileData = data.toLong()
     }
 
     private fun evaluateSprites() {
@@ -243,7 +258,7 @@ class PPU(private var emulator: Emulator) {
 
     private fun backgroundPixel(): Int = when {
         !ppuFlags.showBackground -> 0
-        else -> ((tileShiftRegister shr 32) as Int shr ((7 - ppuFlags.X) * 4)) and 0x0F
+        else -> ((tileShiftRegister shr 32).toInt() shr ((7 - ppuFlags.X) * 4)) and 0x0F
     }
 
     private fun copyX() {
@@ -255,10 +270,7 @@ class PPU(private var emulator: Emulator) {
     }
 
     private fun incrementX() {
-        if (ppuFlags.V and 0x001F == 31)
-            ppuFlags.V = (ppuFlags.V and 0xFFE0) xor 0x0400
-        else
-            ppuFlags.V++
+        ppuFlags.V = if (ppuFlags.V and 0x001F == 31)(ppuFlags.V and 0xFFE0) xor 0x0400 else ppuFlags.V + 1
     }
 
     private fun incrementY() {

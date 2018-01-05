@@ -6,18 +6,33 @@ import kotNES.Opcodes.AddressMode
 import toHexString
 
 class CPU(var memory: CpuMemory) {
+    enum class Interrupts {
+        NMI, IRQ, RESET
+    }
+
     var registers = Register()
     var statusFlags = StatusFlag()
+    private var interruptHandlerOffsets = intArrayOf(0xFFFA, 0xFFFE, 0xFFFC)
+    private var interrupts = BooleanArray(2)
     private var opcodes = Opcodes()
     var opcode: Int = 0
     var cycles: Int = 0
     val cpuFrequency = 1789773
 
     fun tick(): Int {
+
+        for (i in 0..1)
+            if (interrupts[i]) {
+                pushWord(registers.PC)
+                push(registers.P)
+                registers.PC = memory.readWord(interruptHandlerOffsets[i])
+                statusFlags.InterruptDisable = true
+                interrupts[i] = false
+            }
+
         val initCycle = cycles
         opcode = memory[registers.PC]
         registers.P = statusFlags.asByte()
-        println(toString())
         opcodes.pageCrossed = false
 
         val address: Int = opcodes.getAddress(AddressMode.values()[opcodes.addressModes[opcode] - 1], this)
@@ -52,6 +67,11 @@ class CPU(var memory: CpuMemory) {
     fun pop(): Int = memory[0x100 or ++registers.S]
 
     fun popWord(): Int = pop() or (pop() shl 8)
+
+    fun triggerInterrupt(type: Interrupts) {
+        if (!statusFlags.InterruptDisable || type == Interrupts.NMI)
+            interrupts[type as Int] = true
+    }
 }
 
 data class Register (

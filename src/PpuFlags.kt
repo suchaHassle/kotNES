@@ -38,13 +38,12 @@ data class PpuFlags (
         // PPUDATA
         private var readBuffer: Int = 0,
 
-
-
         var busData: Int = 0,
         var _oamAddress: Int = 0,
         var _lastWrittenRegister: Int = 0,
         var T: Int = 0,
         var X: Int = 0,
+        var F: Boolean = false,
         private var _V: Int = 0,
         var memory: PpuMemory
 ) {

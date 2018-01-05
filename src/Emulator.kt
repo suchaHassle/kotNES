@@ -10,8 +10,8 @@ class Emulator {
         cpu.reset()
     }
 
-    fun stepSeconds(seconds: Float) {
-        var cycles = (cpu.cpuFrequency * seconds) as Int
+    fun stepSeconds(seconds: Double) {
+        var cycles = (cpu.cpuFrequency * seconds).toInt()
         while (cycles > 0)
             cycles -= step()
     }
