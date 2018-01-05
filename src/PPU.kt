@@ -1,12 +1,9 @@
 package kotNES
 
 import palette
-import java.util.jar.Attributes
 
 private const val gameWidth = 256
 private const val gameHeight = 240
-private const val scanlineCount = 261
-private const val cyclesPerLine = 341
 
 class PPU(private var emulator: Emulator) {
     var ppuMemory = PpuMemory(emulator)
@@ -26,13 +23,17 @@ class PPU(private var emulator: Emulator) {
     private var nametableByte = 0
     private var spriteCount = 0
     private var scanline = 0
-    private var tileData: Long = 0
 
     fun reset() {
         cycle = 340
         scanline = 240
         bitMap.fill(0)
         spritePositions.fill(0)
+        ppuFlags.F = false
+        frame = 0
+        ppuFlags.PPUCTRL = 0
+        ppuFlags.PPUMASK = 0
+        ppuFlags.OAMADDR = 0
     }
 
     fun step() {
@@ -43,7 +44,6 @@ class PPU(private var emulator: Emulator) {
         // Scanline
         val preLine = scanline == 261
         val visibleLine = scanline < 240
-        val postLine = scanline == 240
         val renderLine = preLine || visibleLine
 
         // Cycle
@@ -149,10 +149,10 @@ class PPU(private var emulator: Emulator) {
             table = ppuFlags.spriteTableAddress
         }
 
-        address = 0x1000 * table + 16 * tile + row
+        address = table + 16 * tile + row
         val a = (attributes and 3) shl 2
-        lowTileByte = ppuMemory[address]
-        highTileByte = ppuMemory[address + 8]
+        lowTileByte = ppuMemory[address] and 0xFF
+        highTileByte = ppuMemory[address + 8] and 0xFF
 
         for (i in 0..7) {
             val p1: Int
@@ -166,8 +166,8 @@ class PPU(private var emulator: Emulator) {
             } else {
                 p1 = (lowTileByte and 1) shr 7
                 p2 = (highTileByte and 1) shr 6
-                lowTileByte = lowTileByte shl 1
-                highTileByte = highTileByte shl 1
+                lowTileByte = (lowTileByte shl 1) and 0xFF
+                highTileByte = (highTileByte shl 1) and 0xFF
             }
 
             data = data shl 4
@@ -179,10 +179,11 @@ class PPU(private var emulator: Emulator) {
 
     private fun fetchTileByte(hi: Boolean) {
         val fineY = (ppuFlags.V shr 12) and 7
-        val address = (0x1000 * ppuFlags.patternTableAddress) + (16 * nametableByte) + fineY
+        val address = (ppuFlags.patternTableAddress and 0xFFFF) +
+                (16 * (nametableByte and 0xFFFF)) + fineY
 
-        if (hi) highTileByte = ppuMemory[address + 8] and 0xFFFF
-        else lowTileByte = ppuMemory[address] and 0xFFFF
+        if (hi) highTileByte = ppuMemory[address + 8] and 0xFF
+        else lowTileByte = ppuMemory[address] and 0xFF
     }
 
     private fun storeTileData() {
@@ -190,12 +191,12 @@ class PPU(private var emulator: Emulator) {
         for (i in 0..7) {
             val p1 = (lowTileByte and 0x80) shr 7
             val p2 = (highTileByte and 0x80) shr 6
-            lowTileByte = (lowTileByte shl 1) and 0xFFFF
-            highTileByte = (highTileByte shl 1) and 0xFFFF
+            lowTileByte = (lowTileByte shl 1) and 0xFF
+            highTileByte = (highTileByte shl 1) and 0xFF
             data = data shl 4
             data = data or (attributeTableByte or p1 or p2)
         }
-        tileData = data.toLong()
+        tileShiftRegister = data.toLong()
     }
 
     private fun evaluateSprites() {
@@ -237,7 +238,7 @@ class PPU(private var emulator: Emulator) {
         }
 
         val c = palette(ppuMemory.readPalleteRam(color) % 64)
-        bitMap[x*y] = c
+        bitMap[(x+1)*(y+1) - 1] = c
     }
 
     private fun spritePixel(): Pair<Int, Int> = when {
