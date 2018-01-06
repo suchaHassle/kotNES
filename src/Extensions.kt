@@ -41,7 +41,7 @@ fun Byte.letBit(i: Int, on: Boolean): Byte {if (on) {return this.setBit(i)} else
 fun Byte.shiftRight() = ((this.toUnsignedInt() shr 1) and 0x7F).toSignedByte()
 
 private var instructionSizes: IntArray = intArrayOf(
-        // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+     // 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
         1,  2,  0,  0,  2,  2,  2,  0,  1,  2,  1,  0,  3,  3,  3,  0,  // 0
         2,  2,  0,  0,  2,  2,  2,  0,  1,  3,  1,  0,  3,  3,  3,  0,  // 1
         3,  2,  0,  0,  2,  2,  2,  0,  1,  2,  1,  0,  3,  3,  3,  0,  // 2

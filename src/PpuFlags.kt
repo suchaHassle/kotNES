@@ -28,17 +28,12 @@ data class PpuFlags (
         var vBlankStarted: Boolean = false,
         var writeToggle: Boolean = false,
 
-        // PPUSCROLL
-        var scrollX: Int = 0,
-        var scrollY: Int = 0,
-
         // PPUADDR
         private var _busAddress: Int = 0,
 
         // PPUDATA
         private var readBuffer: Int = 0,
 
-        var busData: Int = 0,
         var _oamAddress: Int = 0,
         var _lastWrittenRegister: Int = 0,
         var T: Int = 0,
@@ -100,12 +95,10 @@ data class PpuFlags (
     var PPUSCROLL: Int = 0
         set(value) {
             if (writeToggle) {
-                scrollY = value
                 T = T and 0x8FFF or (value and 0x7 shl 12)
                 T = T and 0xFC1F or (value and 0xF8 shl 2)
             } else {
-                scrollX = value
-                X = value and 0x7
+                X = value and 0x07
                 T = T and 0xFFE0 or (value shr 3)
             }
             writeToggle = writeToggle xor true
@@ -125,21 +118,20 @@ data class PpuFlags (
 
     var PPUDATA: Int
         get() {
-            var ret = memory[busAddress]
-            if (busAddress < 0x3F00) {
+            var ret = memory[V]
+            if (V % 0x4000 < 0x3F00) {
                 val temp = readBuffer
                 readBuffer = ret
                 ret = temp
             } else {
-                readBuffer = memory[busAddress - 0x1000]
+                readBuffer = memory[V - 0x1000]
             }
-            busAddress += vramIncrement
+            V += vramIncrement
             return ret
         }
         set(value) {
-            busData = value
-            memory[busAddress] = value
-            busAddress += vramIncrement
+            memory[V] = value
+            V += vramIncrement
         }
 
     var OAMADDR: Int

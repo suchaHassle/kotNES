@@ -6,12 +6,13 @@ import kotNES.Opcodes.AddressMode
 import toHexString
 
 class CPU(var memory: CpuMemory) {
-    enum class Interrupts {
-        NMI, IRQ, RESET
+    enum class Interrupts(val value: Int) {
+        NMI(0), IRQ(1), RESET(2)
     }
 
     var registers = Register()
     var statusFlags = StatusFlag()
+    private var idleCycles = 0
     private var interruptHandlerOffsets = intArrayOf(0xFFFA, 0xFFFE, 0xFFFC)
     private var interrupts = BooleanArray(2)
     private var opcodes = Opcodes()
@@ -20,6 +21,10 @@ class CPU(var memory: CpuMemory) {
     val cpuFrequency = 1789773
 
     fun tick(): Int {
+        if (idleCycles > 0) {
+            idleCycles--
+            return 1
+        }
 
         for (i in 0..1)
             if (interrupts[i]) {
@@ -34,6 +39,7 @@ class CPU(var memory: CpuMemory) {
         opcode = memory[registers.PC]
         registers.P = statusFlags.asByte()
         opcodes.pageCrossed = false
+        println(toString())
 
         val address: Int = opcodes.getAddress(AddressMode.values()[opcodes.addressModes[opcode] - 1], this)
         registers.tick(instructionSize(opcode))
@@ -45,8 +51,8 @@ class CPU(var memory: CpuMemory) {
 
     fun reset() {
         registers.reset()
-        //registers.PC = memory.readWord(0xFFFC)
-        registers.PC = 0xC000
+        registers.PC = memory.readWord(0xFFFC)
+        //registers.PC = 0xC000
         statusFlags.reset()
 
         cycles = 0
@@ -70,7 +76,11 @@ class CPU(var memory: CpuMemory) {
 
     fun triggerInterrupt(type: Interrupts) {
         if (!statusFlags.InterruptDisable || type == Interrupts.NMI)
-            interrupts[type as Int] = true
+            interrupts[type.value] = true
+    }
+
+    fun addIdleCycles(i: Int) {
+        idleCycles += i
     }
 }
 
@@ -130,7 +140,7 @@ data class StatusFlag (
         var DecimalMode: Boolean = false,
         var BreakCommand: Boolean = false,
         var Overflow: Boolean = false,
-        var Negative: Boolean = false
+        var Negative: Boolean = true
 ) {
     fun reset() {
         Carry = false
@@ -139,17 +149,18 @@ data class StatusFlag (
         DecimalMode = false
         BreakCommand = false
         Overflow = false
-        Negative = false
+        Negative = true
     }
 
     fun asByte() =
             ((if (Negative) (1 shl 7) else 0) or
                     (if (Overflow) (1 shl 6) else 0) or
                     (1 shl 5) or // Special logic needed for the B flag...
+                    (if (BreakCommand) (1 shl 4) else 0) or
                     (if (DecimalMode) (1 shl 3) else 0) or
                     (if (InterruptDisable) (1 shl 2) else 0) or
                     (if (Zero) (1 shl 1) else 0) or
-                    (if (Carry) 1 else 0)) and 0xFF
+                    (if (Carry) 1 else 0))
 
     fun toFlags(status: Int) {
         Carry = status.isBitSet(0)

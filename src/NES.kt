@@ -1,9 +1,7 @@
 package kotNES
 
+import javafx.application.Application
+
 fun main(args: Array<String>) {
-    var emulator = Emulator()
-    emulator.start()
-    while (true) {
-        emulator.stepSeconds(1.0)
-    }
+    Application.launch(UI::class.java, *args)
 }

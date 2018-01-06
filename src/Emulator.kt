@@ -1,13 +1,14 @@
 package kotNES
 
 class Emulator {
-    var cartridge = Cartridge("nestest.nes")
+    var cartridge = Cartridge("palette.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
 
     fun start() {
         cpu.reset()
+        ppu.reset()
     }
 
     fun stepSeconds(seconds: Double) {
@@ -24,5 +25,9 @@ class Emulator {
         }
 
         return cpuCycles
+    }
+
+    fun addFrameListener(frameListener: FrameListener) {
+        ppu.addFrameListener(frameListener)
     }
 }

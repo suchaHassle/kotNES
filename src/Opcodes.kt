@@ -400,9 +400,11 @@ class Opcodes {
     private fun brk(mode: AddressMode, cycles: Int) = Opcode {
         this.apply {
             pushWord(registers.PC)
-            push(statusFlags.asByte())
+            //php(mode, 0)
+            //sei(mode, 0)
+            push(statusFlags.asByte() and 0x10)
             statusFlags.InterruptDisable = true
-            registers.PC += memory.readWord(0xFFFE)
+            registers.PC = memory.readWord(0xFFFE)
         }.also { this.cycles += cycles }
     }
 
