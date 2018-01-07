@@ -25,7 +25,7 @@ class PpuMemory(private var emulator: Emulator) {
         when (address) {
             0x2000 -> ppuFlags.PPUCTRL = value
             0x2001 -> ppuFlags.PPUMASK = value
-            0x4014 -> writeOamDma(value)
+            0x4014 -> writeDma(value)
             0x2003 -> ppuFlags.OAMADDR = value
             0x2004 -> ppuFlags.OAMDATA = value
             0x2005 -> ppuFlags.PPUSCROLL = value
@@ -35,25 +35,25 @@ class PpuMemory(private var emulator: Emulator) {
         }
     }
 
-    private fun writeOamDma(value: Int) {
-        var startAddr = (value and 0xFFFF) shl 8
-        for (i in 0..255) {
+    private fun writeDma(value: Int) {
+        var startAddr = value shl 8
+        for (i in 0..0xFF) {
             oam[ppuFlags.oamAddress++] = emulator.cpu.memory[startAddr++]
         }
 
-        emulator.cpu.addIdleCycles(513 + if (emulator.cpu.cycles % 2 == 1) 1 else 0)
+        emulator.cpu.addIdleCycles(513 + emulator.cpu.cycles % 2)
     }
 
-    fun readPaletteRam(address: Int): Int = paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address]
+    fun readPaletteRam(address: Int): Int = paletteRam[if (address >= 16 && address % 4 == 0) (address - 16) else address]
 
     private fun writePaletteRam(address: Int, value: Int) {
-        paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address] = value
+        paletteRam[if (address >= 16 && address % 4 == 0) (address - 16) else address] = value
     }
 
     operator fun get(address: Int) = when (address % 0x4000) {
         in 0x0000..0x1FFF -> emulator.mapper.read(address)
-        in 0x2000..0x2FFF -> vRam[getVramMirror(address)] and 0xFFFF
-        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] and 0xFFFF
+        in 0x2000..0x2FFF -> vRam[getVramMirror(address)]
+        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)]
         in 0x3F00..0x3FFF -> readPaletteRam(address % 32)
         else -> throw IllegalAccessError("$address is not a valid address")
     }
