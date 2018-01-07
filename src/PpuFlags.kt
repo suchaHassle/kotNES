@@ -27,9 +27,7 @@ data class PpuFlags (
         var spriteZeroHit: Boolean = false,
         var vBlankStarted: Boolean = false,
         var writeToggle: Boolean = false,
-
-        // PPUADDR
-        private var _busAddress: Int = 0,
+        var nmiPrevious: Boolean = false,
 
         // PPUDATA
         private var readBuffer: Int = 0,
@@ -40,17 +38,14 @@ data class PpuFlags (
         var X: Int = 0,
         var F: Boolean = false,
         private var _V: Int = 0,
-        var memory: PpuMemory
+        var memory: PpuMemory,
+        var emulator: Emulator
 ) {
     var V: Int // 15 Bits
         get() = _V
         set(value) {
-            _V = value and 0x7FFF
+            _V = value and 0xFFFF
         }
-
-    var busAddress: Int
-        get() = _busAddress
-        set(value) { _busAddress = value and 0x3FFF }
 
     var oamAddress: Int
         get() = _oamAddress
@@ -64,6 +59,7 @@ data class PpuFlags (
             spriteSize = value.isBitSet(5)
             isMaster = value.isBitSet(6)
             nmiOutput = value.isBitSet(7)
+            emulator.ppu.nmiChange()
 
             T = (T and 0xF3FF) or ((value and 0x3) shl 10)
         }
@@ -82,24 +78,25 @@ data class PpuFlags (
 
     var PPUSTATUS: Int = 0
         get() {
-            writeToggle = false
             val ret = (_lastWrittenRegister and 0x1F) or
                     (spriteOverflow.asInt() shl 5) or
                     (spriteZeroHit.asInt() shl 6) or
                     (vBlankStarted.asInt() shl 7)
 
             vBlankStarted = false
+            emulator.ppu.nmiChange()
+            writeToggle = false
             return ret
         }
 
     var PPUSCROLL: Int = 0
         set(value) {
             if (writeToggle) {
-                T = T and 0x8FFF or (value and 0x7 shl 12)
-                T = T and 0xFC1F or (value and 0xF8 shl 2)
+                T = (T and 0x8FFF) or ((value and 0x7) shl 12)
+                T = (T and 0xFC1F) or ((value and 0xF8) shl 2)
             } else {
                 X = value and 0x07
-                T = T and 0xFFE0 or (value shr 3)
+                T = (T and 0xFFE0) or (value shr 3)
             }
             writeToggle = writeToggle xor true
         }
@@ -108,7 +105,6 @@ data class PpuFlags (
         set(value) {
             if (writeToggle) {
                 T = (T and 0xFF00) or value
-                busAddress = T
                 V = T
             } else {
                 T = (T and 0x80FF) or ((value and 0x3F) shl 8)

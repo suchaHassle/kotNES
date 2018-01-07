@@ -3,7 +3,7 @@ package kotNES
 import vRamMirrorLookup
 
 class PpuMemory(private var emulator: Emulator) {
-    var ppuFlags = PpuFlags(memory=this)
+    var ppuFlags = PpuFlags(memory=this, emulator=emulator)
     var vRam = IntArray(2048)
     var paletteRam = IntArray(32)
     var oam = IntArray(256)
@@ -11,12 +11,12 @@ class PpuMemory(private var emulator: Emulator) {
     fun readRegister(address: Int): Int = when (address) {
         //0x2000 -> ppuFlags._lastWrittenRegister and 0xFF
         //1 -> ppuFlags._lastWrittenRegister and 0xFF
-        0x2002 -> ppuFlags.PPUSTATUS and 0xFF
+        0x2002 -> ppuFlags.PPUSTATUS
         //3 -> ppuFlags.OAMADDR and 0xFF
-        0x2004 -> ppuFlags.OAMDATA and 0xFF
+        0x2004 -> ppuFlags.OAMDATA
         //5 -> ppuFlags._lastWrittenRegister and 0xFF
         //6 -> ppuFlags._lastWrittenRegister and 0xFF
-        0x2007 -> ppuFlags.PPUDATA and 0xFF
+        0x2007 -> ppuFlags.PPUDATA
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
@@ -36,41 +36,36 @@ class PpuMemory(private var emulator: Emulator) {
     }
 
     private fun writeOamDma(value: Int) {
-        var startAddr = value shl 8
+        var startAddr = (value and 0xFFFF) shl 8
         for (i in 0..255) {
-            oam[ppuFlags.oamAddress] = emulator.cpu.memory[startAddr]
-            ppuFlags.oamAddress++
-            startAddr++
+            oam[ppuFlags.oamAddress++] = emulator.cpu.memory[startAddr++]
         }
 
         emulator.cpu.addIdleCycles(513 + if (emulator.cpu.cycles % 2 == 1) 1 else 0)
     }
 
-    fun readPaletteRam(address: Int) = paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address]
+    fun readPaletteRam(address: Int): Int = paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address]
 
-    operator fun get(address: Int) = when (address) {
-        in 0x0000..0x1FFF -> emulator.memory[address]
-        in 0x2000..0x2FFF -> vRam[getVramMirror(address)] and 0xFF
-        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] and 0xFF
-        in 0x3F00..0x3FFF -> paletteRam[(getPaletteRamIndex(address) - 0x3F00) and 0x1F]
+    private fun writePaletteRam(address: Int, value: Int) {
+        paletteRam[if (address >= 16 && address % 4 == 0) address - 16 else address] = value
+    }
+
+    operator fun get(address: Int) = when (address % 0x4000) {
+        in 0x0000..0x1FFF -> emulator.mapper.read(address)
+        in 0x2000..0x2FFF -> vRam[getVramMirror(address)] and 0xFFFF
+        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] and 0xFFFF
+        in 0x3F00..0x3FFF -> readPaletteRam(address % 32)
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
-    operator fun set(address: Int, value: Int) = when (address) {
-        in 0x0000..0x1FFF -> emulator.memory[address] = value
-        in 0x2000..0x2FFF -> vRam[getVramMirror(address)] = value and 0xFF
-        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] = value and 0xFF
-        in 0x3F00..0x3FFF -> paletteRam[(getPaletteRamIndex(address) - 0x3F00) and 0x1F] = value
+    operator fun set(address: Int, value: Int) = when (address % 0x4000) {
+        in 0x0000..0x1FFF -> emulator.mapper.write(address, value)
+        in 0x2000..0x2FFF -> vRam[getVramMirror(address)] = value and 0xFFFF
+        in 0x3000..0x3EFF -> vRam[getVramMirror(address - 0x1000)] = value and 0xFFFF
+        in 0x3F00..0x3FFF -> writePaletteRam(address % 32, value)
         else -> throw IllegalAccessError("$address is not a valid address")
     }
 
-    private fun getVramMirror(address: Int): Int {
-        return vRamMirrorLookup(emulator.cartridge.mirroringMode, ((address - 0x2000).div(0x400))) * 0x400 +
-                ((address - 0x2000).rem(0x400))
-    }
-
-    private fun getPaletteRamIndex(address: Int): Int = when (address) {
-        0x3F10, 0x3F14, 0x3F18, 0x3F0C -> address - 0x10
-        else -> address
-    }
+    private fun getVramMirror(address: Int): Int = vRamMirrorLookup(emulator.cartridge.mirroringMode,
+            ((address - 0x2000) / 0x400)) * 0x400 + ((address - 0x2000) % 0x400)
 }

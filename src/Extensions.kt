@@ -63,9 +63,9 @@ private var instructionSizes: IntArray = intArrayOf(
 private var vRamMirror = arrayOf(
         intArrayOf(0, 0, 1, 1),
         intArrayOf(0, 1, 0, 1),
-        intArrayOf(0, 1, 2, 3),
         intArrayOf(0, 0, 0, 0),
-        intArrayOf(1, 1, 1, 1)
+        intArrayOf(1, 1, 1, 1),
+        intArrayOf(0, 1, 2, 3)
 )
 
 private var palette = intArrayOf(

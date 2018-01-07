@@ -39,7 +39,7 @@ class CPU(var memory: CpuMemory) {
         opcode = memory[registers.PC]
         registers.P = statusFlags.asByte()
         opcodes.pageCrossed = false
-        println(toString())
+        //println(toString())
 
         val address: Int = opcodes.getAddress(AddressMode.values()[opcodes.addressModes[opcode] - 1], this)
         registers.tick(instructionSize(opcode))
@@ -55,6 +55,7 @@ class CPU(var memory: CpuMemory) {
         //registers.PC = 0xC000
         statusFlags.reset()
 
+        idleCycles = 0
         cycles = 0
     }
 
@@ -140,16 +141,10 @@ data class StatusFlag (
         var DecimalMode: Boolean = false,
         var BreakCommand: Boolean = false,
         var Overflow: Boolean = false,
-        var Negative: Boolean = true
+        var Negative: Boolean = false
 ) {
     fun reset() {
-        Carry = false
-        Zero = false
-        InterruptDisable = true
-        DecimalMode = false
-        BreakCommand = false
-        Overflow = false
-        Negative = true
+        toFlags(0x24)
     }
 
     fun asByte() =

@@ -7,7 +7,7 @@ class Cartridge(filePath: String) {
     private val MAGIC_HEADER = 0x1A53454E
 
     private var stream = FileInputStream(filePath)
-    private var data = ByteArray(stream.available())
+    var data = ByteArray(stream.available())
 
     private val prgROMSize: Int
     private val chrROMSize: Int
@@ -15,7 +15,7 @@ class Cartridge(filePath: String) {
     private val flag7: Int
     private val flag9: Int
     private val prgRAMSize: Int
-    private val mapper: Int
+    val mapper: Int
 
     val mirroringMode: Int
 
@@ -46,7 +46,7 @@ class Cartridge(filePath: String) {
         mapper = data[6].toUnsignedInt() shr(4) or (data[7].toUnsignedInt()  and 0xF0)
 
         // Loading Prg ROM
-        val prgOffset = 16 + if ((flag6 and 0b100) == 0) 512 else 0
+        val prgOffset = 16 + if ((flag6 and 0b100) != 0) 512 else 0
         prgROM = data.copyOfRange(16, prgOffset + prgROMSize).map { it.toUnsignedInt() }.toIntArray()
 
         if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset +

@@ -1,10 +1,20 @@
 package kotNES
 
+import kotNES.mapper.NROM
+
 class Emulator {
-    var cartridge = Cartridge("palette.nes")
+    var cartridge = Cartridge("roms/palette.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
+    var mapper: Mapper
+
+    init {
+        when (cartridge.mapper) {
+            0 -> mapper = NROM(this)
+            else -> throw UnsupportedMapper("${cartridge.mapper} mapper is not supported")
+        }
+    }
 
     fun start() {
         cpu.reset()
@@ -12,7 +22,7 @@ class Emulator {
     }
 
     fun stepSeconds(seconds: Double) {
-        var cycles = (cpu.cpuFrequency * seconds).toInt()
+        var cycles = (cpu.cpuFrequency * seconds).toLong()
         while (cycles > 0)
             cycles -= step()
     }
@@ -30,4 +40,6 @@ class Emulator {
     fun addFrameListener(frameListener: FrameListener) {
         ppu.addFrameListener(frameListener)
     }
+
+    class UnsupportedMapper(s: String) : Exception()
 }

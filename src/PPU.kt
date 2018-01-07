@@ -1,5 +1,6 @@
 package kotNES
 
+import isBitSet
 import palette
 
 private const val gameWidth = 256
@@ -24,13 +25,11 @@ class PPU(private var emulator: Emulator) {
     private var nametableByte = 0
     private var spriteCount = 0
     private var scanline = 0
+    private var nmiDelay = 0
 
     fun reset() {
         cycle = 340
         scanline = 240
-        bitMap.fill(0)
-        spritePositions.fill(0)
-        ppuFlags.F = false
         frame = 0
         ppuFlags.PPUCTRL = 0
         ppuFlags.PPUMASK = 0
@@ -45,18 +44,13 @@ class PPU(private var emulator: Emulator) {
         // Scanline
         val preLine = scanline == 261
         val visibleLine = scanline < 240
+        val postLine = scanline == 0
         val renderLine = preLine || visibleLine
 
         // Cycle
         val prefetchCycle = cycle in 321..336
         val visibleCycle = cycle in 1..256
         val fetchCycle = prefetchCycle || visibleCycle
-
-        if (preLine && cycle == 1) {
-            ppuFlags.vBlankStarted = false
-            ppuFlags.spriteZeroHit = false
-            ppuFlags.spriteOverflow = false
-        }
 
         if (renderingEnabled) {
             // Background Logic
@@ -83,16 +77,46 @@ class PPU(private var emulator: Emulator) {
 
             // Sprite Logic
             if (cycle == 257) {
-                if (visibleLine) evaluateSprites()
+                if (renderLine) evaluateSprites()
                 else spriteCount = 0
             }
         }
+
+        if (scanline == 241 && cycle == 1) {
+            setVBlank()
+        }
+
+        if (preLine && cycle == 1) {
+            clearVBlank()
+            ppuFlags.spriteZeroHit = false
+            ppuFlags.spriteOverflow = false
+        }
+    }
+
+    private fun clearVBlank() {
+        ppuFlags.vBlankStarted = false
+        nmiChange()
+    }
+
+    fun nmiChange() {
+        val nmi = ppuFlags.nmiOutput && ppuFlags.vBlankStarted
+        if (nmi && !ppuFlags.nmiPrevious) {
+            nmiDelay = 15
+        }
+        ppuFlags.nmiPrevious = nmi
+    }
+
+    private fun setVBlank() {
+        listener?.frameUpdate(bitMap)
+        ppuFlags.vBlankStarted = true
+        nmiChange()
     }
 
     private fun tick() {
-        if (scanline == 241 && cycle == 1) {
-            ppuFlags.vBlankStarted = true
-            if (ppuFlags.nmiOutput) emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
+        if (nmiDelay > 0) {
+            nmiDelay--
+            if (nmiDelay == 0 && ppuFlags.nmiOutput && ppuFlags.vBlankStarted)
+                emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
         }
 
         val renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
@@ -103,6 +127,7 @@ class PPU(private var emulator: Emulator) {
                 scanline = 0
                 frame++
                 ppuFlags.F = !ppuFlags.F
+                listener?.frameUpdate(bitMap)
                 return
             }
         }
@@ -127,16 +152,17 @@ class PPU(private var emulator: Emulator) {
     private fun fetchAttributeTableByte() {
         val v = ppuFlags.V and 0xFFFF
         val address = 0x23C0 or (v and 0x0C00) or ((v shr 4) and 0x38) or ((v shr 2) and 0x07)
-        val shift = ((v shr 4) and 4) or (v and 2)
+        val shift = ((v ushr 4) and 4) or (v and 2)
         attributeTableByte = ((ppuMemory[address] shr shift) and 3) shl 2
     }
 
-    private fun fetchSprite(tile: Int, attributes: Int, row: Int): Int {
+    private fun fetchSprite(i: Int, row: Int): Int {
         var row = row
-        var tile = tile
+        var tile = ppuMemory.oam[i*4 + 1]
+        var attributes = ppuMemory.oam[i*4 + 2]
         val address: Int
         val table: Int
-        var data: Int = 0
+        var data = 0
 
         if (ppuFlags.spriteSize) {
             if (attributes and 0x80 == 0x80) row = 15 - row
@@ -151,7 +177,7 @@ class PPU(private var emulator: Emulator) {
             table = ppuFlags.spriteTableAddress
         }
 
-        address = ((table and 0xFFFF) + 16 * (tile and 0xFFFF) + (row and 0xFFFF)) and 0xFFFF
+        address = ((table and 0xFFFF) + (16 * (tile and 0xFFFF)) + (row and 0xFFFF)) and 0xFFFF
         val a = (attributes and 3) shl 2
         lowTileByte = ppuMemory[address] and 0xFF
         highTileByte = ppuMemory[address + 8] and 0xFF
@@ -180,8 +206,7 @@ class PPU(private var emulator: Emulator) {
 
     private fun fetchTileByte(hi: Boolean) {
         val fineY = (ppuFlags.V ushr 12) and 7
-        val address = (ppuFlags.patternTableAddress and 0xFFFF) +
-                (16 * (nametableByte and 0xFFFF)) + fineY
+        val address = ((ppuFlags.patternTableAddress) + (16 * nametableByte) + fineY) and 0xFFFF
 
         if (hi) highTileByte = ppuMemory[address + 8] and 0xFF
         else lowTileByte = ppuMemory[address] and 0xFF
@@ -194,10 +219,9 @@ class PPU(private var emulator: Emulator) {
             val p2 = (highTileByte and 0x80) ushr 6
             lowTileByte = (lowTileByte shl 1) and 0xFF
             highTileByte = (highTileByte shl 1) and 0xFF
-            data = data shl 4
-            data = data or (attributeTableByte or p1 or p2)
+            data = (data shl 4) or (attributeTableByte or p1 or p2)
         }
-        tileShiftRegister = data.toLong()
+        tileShiftRegister = tileShiftRegister or data.toLong()
     }
 
     private fun evaluateSprites() {
@@ -206,17 +230,16 @@ class PPU(private var emulator: Emulator) {
 
         for (i in 0..63) {
             val y = ppuMemory.oam[i*4] and 0xFF
-            val sprite = ppuMemory.oam[i*4+1]
             val a = ppuMemory.oam[i*4 + 2] and 0xFF
             val x = ppuMemory.oam[i*4 + 3] and 0xFF
             val row = scanline - y
 
             if (row in 0..(h-1)) {
                 if (count < 8) {
-                    spritePatterns[count] = fetchSprite(sprite, a, row)
+                    spritePatterns[count] = fetchSprite(i, row)
                     spritePositions[count] = x
                     spritePriorities[count] = (a shr 5) and 1
-                    spriteIndexes[count] = i and 0xFF
+                    spriteIndexes[count] = i
                 }
                 count++
             }
@@ -239,34 +262,33 @@ class PPU(private var emulator: Emulator) {
         val b = background % 4 != 0
         val s = spritePixel % 4 != 0
 
-        val color: Int = when {
-            !b && !s -> 0
-            !b && s -> spritePixel or 0x10
-            b && !s -> background
+        val color: Int
+        when {
+            !b && !s -> color = 0
+            !b && s -> color = spritePixel or 0x10
+            b && !s -> color = background
             else -> {
                 if (spriteIndexes[i] == 0 && x < 255) ppuFlags.spriteZeroHit = true
-                if (spritePriorities[i] == 0) (spritePixel and 0x10)
-                else background
+                color = if (spritePriorities[i] == 0) (spritePixel or 0x10) else background
             }
         }
 
-        val c = palette(ppuMemory.readPaletteRam(color and 0xFFFF) % 64)
+        val c = palette(ppuMemory.readPaletteRam(color) % 64)
         bitMap[y*256 + x] = c
     }
 
-    private fun spritePixel(): Pair<Int, Int> = when {
-        !ppuFlags.showSprites -> Pair(0,0)
-        else -> {
+    private fun spritePixel(): Pair<Int, Int> {
+        if (!ppuFlags.showSprites) return Pair(0,0)
+        else  {
             for (i in 0..(spriteCount - 1)) {
                 var offset = (cycle - 1) - spritePositions[i]
                 if (offset in 0..7) {
                     offset = 7 - offset
-                    val color = (spritePatterns[i] ushr ((offset*4) and 0xFF)) and 0xFF
-                    if (color % 4 != 0)
-                        Pair(i, color)
+                    val color = (spritePatterns[i] ushr ((offset * 4) and 0xFF)) and 0x0F
+                    if (color % 4 != 0) return Pair(i and 0xFF, color and 0xFF)
                 }
             }
-            Pair(0,0)
+            return Pair(0,0)
         }
     }
 

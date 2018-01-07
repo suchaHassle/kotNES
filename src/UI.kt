@@ -7,6 +7,9 @@ import javafx.scene.image.PixelFormat
 import javafx.scene.layout.StackPane
 import javafx.stage.Stage
 import tornadofx.App
+import java.awt.image.BufferedImage
+import java.io.File
+import javax.imageio.ImageIO
 import kotlin.concurrent.thread
 
 private const val gameWidth = 256
@@ -48,8 +51,18 @@ class UI : FrameListener, App() {
 
     override fun frameUpdate(frame: IntArray) {
         if (last60++ == 120) {
-            println(emulator.ppu.tileShiftRegister)
-            last60 = 0
+            var img = BufferedImage(gameWidth, gameHeight, BufferedImage.TYPE_INT_RGB)
+
+            var q = 0
+
+            for (y in 0..(gameHeight - 1))
+                for (x in 0..(gameWidth - 1)) {
+                    img.setRGB(x, y, frame[q++])
+                }
+
+            ImageIO.write(img, "jpg", File("frame.jpg"))
+
+            println("saved bitmap")
         }
 
         var i = 0
