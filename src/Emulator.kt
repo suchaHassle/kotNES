@@ -3,7 +3,7 @@ package kotNES
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/palette.nes")
+    var cartridge = Cartridge("roms/donkeykong.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)

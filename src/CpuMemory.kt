@@ -1,18 +1,6 @@
 package kotNES
 
-import kotNES.mapper.NROM
-
-/**
- * $0000-0800 - Internal RAM, 2KB chip in the NES
- * $2000-2007 - PPU access ports
- * $4000-4017 - Audio and controller access ports
- * $6000-7FFF - Optional WRAM inside the game cart
- * $8000-FFFF - Game cartridge ROM
- */
-
-class CpuMemory(var emulator: Emulator) {
-    var cartridge = emulator.cartridge
-
+class CpuMemory(private var emulator: Emulator) {
     private var apuIoRegisters = IntArray(0x20)
     private val internalRam = IntArray(0x800)
 
