@@ -26,7 +26,7 @@ class PpuMemory(private var emulator: Emulator) {
             0x2000 -> ppuFlags.PPUCTRL = value
             0x2001 -> ppuFlags.PPUMASK = value
             0x4014 -> writeDma(value)
-            0x2003 -> ppuFlags.OAMADDR = value
+            0x2003 -> ppuFlags.oamAddress = value
             0x2004 -> ppuFlags.OAMDATA = value
             0x2005 -> ppuFlags.PPUSCROLL = value
             0x2006 -> ppuFlags.PPUADDR = value

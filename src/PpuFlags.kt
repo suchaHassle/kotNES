@@ -59,7 +59,6 @@ data class PpuFlags (
             spriteSize = value.isBitSet(5)
             isMaster = value.isBitSet(6)
             nmiOutput = value.isBitSet(7)
-            emulator.ppu.nmiChange()
 
             T = (T and 0xF3FF) or ((value and 0x3) shl 10)
         }
@@ -84,7 +83,6 @@ data class PpuFlags (
                     (vBlankStarted.asInt() shl 7)
 
             vBlankStarted = false
-            emulator.ppu.nmiChange()
             writeToggle = false
             return ret
         }
@@ -129,10 +127,6 @@ data class PpuFlags (
             memory[V] = value
             V += vramIncrement
         }
-
-    var OAMADDR: Int
-        get() = oamAddress
-        set(value) { oamAddress = value }
 
     var OAMDATA: Int
         get() = memory.oam[oamAddress]
