@@ -1,9 +1,10 @@
 package kotNES
 
+import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/donkeykong.nes")
+    var cartridge = Cartridge("roms/smb.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
@@ -14,6 +15,7 @@ class Emulator {
     init {
         when (cartridge.mapper) {
             0 -> mapper = NROM(this)
+            4 -> mapper = MMC3(this)
             else -> throw UnsupportedMapper("${cartridge.mapper} mapper is not supported")
         }
     }

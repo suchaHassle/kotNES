@@ -15,15 +15,17 @@ class PPU(private var emulator: Emulator) {
     var spritePriorities = IntArray(8)
     var spriteIndexes = IntArray(8)
     var tileShiftRegister: Long = 0
+    var cycle = 0
+    var scanline = 0
+    var renderingEnabled: Boolean = false
+
 
     private var attributeTableByte = 0
-    private var cycle = 0
     private var highTileByte = 0
     private var listener : FrameListener? = null
     private var lowTileByte = 0
     private var nametableByte = 0
     private var spriteCount = 0
-    private var scanline = 0
 
     fun reset() {
         cycle = 340
@@ -37,7 +39,7 @@ class PPU(private var emulator: Emulator) {
     fun step() {
         tick()
 
-        val renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
+        renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
 
         // Scanline
         val preLine = scanline == 261
@@ -92,8 +94,6 @@ class PPU(private var emulator: Emulator) {
             ppuFlags.vBlankStarted = true
             if (ppuFlags.nmiOutput) emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
         }
-
-        val renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
 
         if (renderingEnabled) {
             if (scanline == 261 && ppuFlags.F && cycle == 339) {

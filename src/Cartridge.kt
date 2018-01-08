@@ -9,8 +9,8 @@ class Cartridge(filePath: String) {
     private var stream = FileInputStream(filePath)
     var data = ByteArray(stream.available())
 
-    private val prgROMSize: Int
-    private val chrROMSize: Int
+    val prgROMSize: Int
+    val chrROMSize: Int
     private val flag6: Int
     private val flag7: Int
     private val flag9: Int
@@ -19,8 +19,9 @@ class Cartridge(filePath: String) {
 
     val mirroringMode: Int
 
-    private var prgROM: IntArray
-    private lateinit var chrROM: IntArray
+    var prgROM: IntArray
+    lateinit var chrROM: IntArray
+    var prgRam = IntArray(0x2000)
 
     class InvalidROM(override var message: String) : Exception()
     class NoCHRRomException(override var message: String) : Exception()
@@ -61,6 +62,8 @@ class Cartridge(filePath: String) {
     }
 
     fun writeCHRRom(address: Int, value: Int) { chrROM[address] = value }
+
+    fun writePRGRam(address: Int, value: Int) { prgRam[address] = value }
 
     override fun toString(): String = "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: $mapper"
 }
