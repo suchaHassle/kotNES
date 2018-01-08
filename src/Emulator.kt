@@ -3,10 +3,11 @@ package kotNES
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/donkeykong.nes")
+    var cartridge = Cartridge("roms/color_test.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
+    var controller = Controller()
     var mapper: Mapper
 
     init {

@@ -1,9 +1,11 @@
 package kotNES
 
 import javafx.animation.AnimationTimer
+import javafx.event.EventHandler
 import javafx.scene.Scene
 import javafx.scene.canvas.Canvas
 import javafx.scene.image.PixelFormat
+import javafx.scene.input.KeyCode
 import javafx.scene.layout.StackPane
 import javafx.stage.Stage
 import tornadofx.App
@@ -26,6 +28,31 @@ class UI : FrameListener, App() {
         this.stage = stage.apply {
             title = "kotNES"
             scene = Scene(StackPane().apply { children.add(canvas) })
+            scene.onKeyPressed = EventHandler { event ->
+                when (event.code) {
+                    KeyCode.UP -> emulator.controller.setButtonState(Controller.Buttons.Up, true)
+                    KeyCode.DOWN -> emulator.controller.setButtonState(Controller.Buttons.Down, true)
+                    KeyCode.LEFT -> emulator.controller.setButtonState(Controller.Buttons.Left, true)
+                    KeyCode.RIGHT -> emulator.controller.setButtonState(Controller.Buttons.Right, true)
+                    KeyCode.Z -> emulator.controller.setButtonState(Controller.Buttons.A, true)
+                    KeyCode.X -> emulator.controller.setButtonState(Controller.Buttons.B, true)
+                    KeyCode.Q -> emulator.controller.setButtonState(Controller.Buttons.Start, true)
+                    KeyCode.W -> emulator.controller.setButtonState(Controller.Buttons.Select, true)
+                }
+            }
+            scene.onKeyReleased = EventHandler { event ->
+                when (event.code) {
+                    KeyCode.UP -> emulator.controller.setButtonState(Controller.Buttons.Up, false)
+                    KeyCode.DOWN -> emulator.controller.setButtonState(Controller.Buttons.Down, false)
+                    KeyCode.LEFT -> emulator.controller.setButtonState(Controller.Buttons.Left, false)
+                    KeyCode.RIGHT -> emulator.controller.setButtonState(Controller.Buttons.Right, false)
+                    KeyCode.Z -> emulator.controller.setButtonState(Controller.Buttons.A, false)
+                    KeyCode.X -> emulator.controller.setButtonState(Controller.Buttons.B, false)
+                    KeyCode.Q -> emulator.controller.setButtonState(Controller.Buttons.Start, false)
+                    KeyCode.W -> emulator.controller.setButtonState(Controller.Buttons.Select, false)
+                }
+            }
+
             show()
         }
 
