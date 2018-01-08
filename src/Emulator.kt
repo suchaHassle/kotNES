@@ -3,12 +3,13 @@ package kotNES
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/color_test.nes")
+    var cartridge = Cartridge("roms/donkeykong.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
     var controller = Controller()
     var mapper: Mapper
+    var evenOdd: Boolean = false
 
     init {
         when (cartridge.mapper) {
@@ -22,20 +23,17 @@ class Emulator {
         ppu.reset()
     }
 
-    fun stepSeconds(seconds: Double) {
-        var cycles = (cpu.cpuFrequency * seconds).toLong()
-        while (cycles > 0)
-            cycles -= step()
+    fun stepSeconds() {
+        val orig = evenOdd
+        while (orig == evenOdd) step()
     }
 
-    private fun step(): Int {
+    fun step() {
         val cpuCycles = cpu.tick()
         val ppuCycles = cpuCycles * 3
         for (i in 0..(ppuCycles - 1)) {
             ppu.step()
         }
-
-        return cpuCycles
     }
 
     fun addFrameListener(frameListener: FrameListener) {
