@@ -18,7 +18,6 @@ class CPU(var memory: CpuMemory) {
     private var opcodes = Opcodes()
     var opcode: Int = 0
     var cycles: Int = 0
-    val cpuFrequency = 1789773
 
     fun tick(): Int {
         if (idleCycles > 0) {
@@ -29,7 +28,7 @@ class CPU(var memory: CpuMemory) {
         for (i in 0..1)
             if (interrupts[i]) {
                 pushWord(registers.PC)
-                push(registers.P)
+                push(statusFlags.asByte())
                 registers.PC = memory.readWord(interruptHandlerOffsets[i])
                 statusFlags.InterruptDisable = true
                 interrupts[i] = false

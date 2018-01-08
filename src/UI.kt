@@ -71,7 +71,6 @@ class UI : FrameListener, App() {
                     val endTime = System.currentTimeMillis()
 
                     var sleepTime: Long = (((1000.0) / 60) - (endTime - startTime)).toLong()
-                    if (sleepTime < 0) println(sleepTime)
                     sleepTime = max(sleepTime, 0)
 
                     Thread.sleep(sleepTime)

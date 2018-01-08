@@ -1,6 +1,5 @@
 package kotNES.mapper
 
-import isBitSet
 import kotNES.CPU
 import kotNES.Emulator
 import kotNES.Mapper
@@ -16,19 +15,12 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
     private var prgRamProtect: Boolean = false
     private var bankRegisters = IntArray(8)
     private var chrBankOffsets = IntArray(8)
-    private var prgBankOffsets = IntArray(4)
-
-    init {
-        prgBankOffsets[0] = 0
-        prgBankOffsets[1] = 0x2000
-        prgBankOffsets[2] = lastBankOffset
-        prgBankOffsets[3] = lastBankOffset + 0x2000
-    }
+    private var prgBankOffsets: IntArray = intArrayOf(0, 0x2000, lastBankOffset, lastBankOffset + 0x2000)
 
     override fun read(address: Int): Int = when {
         address in 0x0000..0x1FFF -> emulator.cartridge.readCHRRom(chrBankOffsets[address / 0x400] + (address % 0x400))
-        address in 0x6000..0x7FFF -> if (prgRamEnable) emulator.cartridge.readPRGRom(address - 0x6000) else 0
-        address <= 0xFFFF -> emulator.cartridge.readPRGRom(prgBankOffsets[(address - 0x8000) / 0x2000] + (address % 0x2000))
+        address in 0x6000..0x7FFF -> if (prgRamEnable) emulator.cartridge.readPRGRam(address - 0x6000) else 0
+        address in 0x8000..0xFFFF -> emulator.cartridge.readPRGRom(prgBankOffsets[(address - 0x8000) / 0x2000] + (address % 0x2000))
         else -> throw IndexOutOfBoundsException("$address is out of bounds")
     }
 
@@ -40,20 +32,20 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
             in 0x6000..0x7FFF -> if (!prgRamProtect) emulator.cartridge.writePRGRam(address - 0x6000, value)
             in 0x8000..0x9FFF -> if (even) writeBankSelectReg(value) else writeBankDataReg(value)
             in 0xA000..0xBFFF -> if (even) writeMirroringReg(value) else writePrgRamProtectReg(value)
-            in 0xC000..0xDFFF -> if (even) writeIrqLatchReg(value) else writeIrqReloadReg()
-            in 0xE000..0xFFFF -> if (even) writeIrqReg(false) else writeIrqReg(true)
+            in 0xC000..0xDFFF -> if (even) irqCounterReload = value and 0xFF else irqCounter = 0
+            in 0xE000..0xFFFF -> irqEnabled = !even
         }
     }
 
     private fun writeBankSelectReg(value: Int) {
         bank = value and 7
-        prgRomMode = value.isBitSet(6)
-        chrRomMode = value.isBitSet(7)
+        prgRomMode = ((value shr 6) and 0x01) != 0
+        chrRomMode = ((value shr 7) and 0x01) != 0
         updateBankOffsets()
     }
 
     private fun writeBankDataReg(value: Int) {
-        bankRegisters[bank] = value
+        bankRegisters[bank] = value and 0xFF
         updateBankOffsets()
     }
 
@@ -65,20 +57,8 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
     }
 
     private fun writePrgRamProtectReg(value: Int) {
-        prgRamEnable = value.isBitSet(7)
-        prgRamProtect = value.isBitSet(6)
-    }
-
-    private fun writeIrqLatchReg(value: Int) {
-        irqCounterReload = value and 0xFF
-    }
-
-    private fun writeIrqReloadReg() {
-        irqCounter = 0
-    }
-
-    private fun writeIrqReg(value: Boolean) {
-        irqEnabled = value
+        prgRamEnable = ((value shr 7) and 0x01) != 0
+        prgRamProtect = ((value shr 6) and 0x01) != 0
     }
 
     private fun clock() {
@@ -93,7 +73,7 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
         val scanline = emulator.ppu.scanline
         val cycle = emulator.ppu.cycle
 
-        if (emulator.ppu.renderingEnabled && cycle == 315 && scanline in 0..239) clock()
+        if (emulator.ppu.renderingEnabled && cycle == 260 && scanline in 0..239) clock()
     }
 
     private fun updateBankOffsets() {
@@ -123,8 +103,8 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
             prgBankOffsets[2] = bankRegisters[6] * 0x2000
             prgBankOffsets[3] = lastBankOffset + 0x2000
         } else {
-            prgBankOffsets[0] = bankRegisters[7] * 0x200
-            prgBankOffsets[1] = bankRegisters[6] * 0x200
+            prgBankOffsets[0] = bankRegisters[6] * 0x2000
+            prgBankOffsets[1] = bankRegisters[7] * 0x2000
             prgBankOffsets[2] = lastBankOffset
             prgBankOffsets[3] = lastBankOffset + 0x2000
         }

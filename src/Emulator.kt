@@ -4,7 +4,7 @@ import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/smb.nes")
+    var cartridge = Cartridge("roms/smb3.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
@@ -35,6 +35,7 @@ class Emulator {
         val ppuCycles = cpuCycles * 3
         for (i in 0..(ppuCycles - 1)) {
             ppu.step()
+            mapper.step()
         }
     }
 
