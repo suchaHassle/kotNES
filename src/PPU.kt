@@ -1,11 +1,18 @@
 package kotNES
 
+import Renderers.IRenderManager
 import palette
-
-private const val gameWidth = 256
-private const val gameHeight = 240
+import java.awt.Component
+import java.awt.Graphics2D
+import java.awt.image.BufferedImage
+import java.awt.peer.ComponentPeer
+import java.util.*
+import java.awt.image.DataBufferInt
 
 class PPU(private var emulator: Emulator) {
+    val gameWidth = 256
+    val gameHeight = 240
+
     var ppuMemory = PpuMemory(emulator)
     var ppuFlags = ppuMemory.ppuFlags
     var bitMap = IntArray(gameWidth * gameHeight)
@@ -18,11 +25,13 @@ class PPU(private var emulator: Emulator) {
     var cycle = 340
     var scanline = 240
     var renderingEnabled: Boolean = false
+    var currentRenderer: IRenderManager? = null
+    lateinit var renderers: List<IRenderManager>
+    var screenBuffer = BufferedImage(gameWidth, gameHeight, BufferedImage.TYPE_INT_RGB)
 
 
     private var attributeTableByte = 0
     private var highTileByte = 0
-    private var listener : FrameListener? = null
     private var lowTileByte = 0
     private var nametableByte = 0
     private var spriteCount = 0
@@ -84,7 +93,7 @@ class PPU(private var emulator: Emulator) {
 
         if (scanline == 241 && cycle == 1) {
             ppuFlags.vBlankStarted = true
-            listener?.frameUpdate(bitMap)
+            drawFrame()
             if (ppuFlags.nmiOutput) emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
         }
 
@@ -95,12 +104,25 @@ class PPU(private var emulator: Emulator) {
         }
     }
 
+    private fun drawFrame() {
+        if (currentRenderer != null) {
+            var graphics: Graphics2D = currentRenderer!!.graphics
+
+            val dbb = screenBuffer.raster.dataBuffer as DataBufferInt
+            var data = dbb.getData(0)
+            System.arraycopy(bitMap, 0, data, 0, data.size)
+
+            graphics.drawImage(screenBuffer, 0, 0, emulator.display.width, emulator.display.height, null)
+
+            emulator.evenOdd = !emulator.evenOdd
+        }
+    }
+
     private fun tick() {
         renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
 
         if (renderingEnabled) {
             if (scanline == 261 && ppuFlags.F && cycle == 339) {
-                //listener?.frameUpdate(bitMap)
                 cycle = -1
                 scanline = 0
                 frame++
@@ -114,7 +136,6 @@ class PPU(private var emulator: Emulator) {
             cycle = -1
             scanline++
             if (scanline > 261) {
-                //listener?.frameUpdate(bitMap)
                 scanline = 0
                 frame++
                 ppuFlags.F = !ppuFlags.F
@@ -305,7 +326,35 @@ class PPU(private var emulator: Emulator) {
         }
     }
 
-    fun addFrameListener(frameListener: FrameListener) {
-        listener = frameListener
+    fun initRenderer() {
+        renderers = Collections.unmodifiableList(object : ArrayList<IRenderManager>() {
+            init {
+                for (rendererClass in IRenderManager.RENDERERS) {
+                    val renderer: IRenderManager
+                    try {
+                        System.err.println(rendererClass)
+                        // Look up peer reflectively since Container#getPeer is removed in
+                        // Java 9; this is still "illegal access" as far as the JRE cares,
+                        // but it should work till Java 10 at least.
+                        val peer = Component::class.java!!.getDeclaredField("peer")
+                        peer.isAccessible = true
+                        renderer = rendererClass.getDeclaredConstructor(ComponentPeer::class.java).newInstance(peer.get(emulator.display))
+                    } catch (ignored: ReflectiveOperationException) {
+                        // #error failure means we try the next renderer
+                        continue
+                    }
+
+                    if (renderer.graphics != null) {
+                        add(renderer)
+                        if (currentRenderer == null) {
+                            println("Using " + renderer)
+                            currentRenderer = renderer
+                        }
+                    } else {
+                        System.err.println(renderer.toString() + " failed to produce a Graphics2D")
+                    }
+                }
+            }
+        })
     }
 }

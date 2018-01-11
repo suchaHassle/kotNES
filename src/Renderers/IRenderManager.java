@@ -1,5 +1,7 @@
 package Renderers;
 
+import kotNES.PPU;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -40,4 +42,6 @@ public interface IRenderManager
      * among any other setup code this renderer needs.
      */
     void update();
+
+    JRadioButtonMenuItem getRadioMenuItem(PPU ppu);
 }

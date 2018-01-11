@@ -1,105 +1,195 @@
 package kotNES
 
-import javafx.animation.AnimationTimer
-import javafx.event.EventHandler
-import javafx.scene.Scene
-import javafx.scene.canvas.Canvas
-import javafx.scene.image.PixelFormat
-import javafx.scene.input.KeyCode
-import javafx.scene.layout.StackPane
-import javafx.stage.Stage
-import tornadofx.App
-import java.lang.Long.max
+import javax.swing.*
+import javax.swing.filechooser.FileFilter
+import java.awt.event.*
+import java.awt.*
+import java.io.File
+import java.util.concurrent.Semaphore
+import javax.swing.ButtonGroup
+import javax.swing.JMenu
+import javax.swing.JPopupMenu
+import javax.swing.SwingUtilities
 
 private const val gameWidth = 256
 private const val gameHeight = 240
 
-class UI : FrameListener, App() {
-    private lateinit var stage: Stage
-    private var emulator = Emulator().also { it.addFrameListener(this) }
-    private var canvas = Canvas(gameWidth.toDouble(), gameHeight.toDouble())
-    private var nextFrame = ByteArray(gameWidth * gameHeight * 3)
+class UI {
 
-    override fun start(stage: Stage) {
-        this.stage = stage.apply {
-            title = "kotNES"
-            scene = Scene(StackPane().apply { children.add(canvas) })
-            scene.onKeyPressed = EventHandler { event ->
-                when (event.code) {
-                    KeyCode.UP -> emulator.controller.setButtonState(Controller.Buttons.Up, true)
-                    KeyCode.DOWN -> emulator.controller.setButtonState(Controller.Buttons.Down, true)
-                    KeyCode.LEFT -> emulator.controller.setButtonState(Controller.Buttons.Left, true)
-                    KeyCode.RIGHT -> emulator.controller.setButtonState(Controller.Buttons.Right, true)
-                    KeyCode.Z -> emulator.controller.setButtonState(Controller.Buttons.A, true)
-                    KeyCode.X -> emulator.controller.setButtonState(Controller.Buttons.B, true)
-                    KeyCode.Q -> emulator.controller.setButtonState(Controller.Buttons.Start, true)
-                    KeyCode.W -> emulator.controller.setButtonState(Controller.Buttons.Select, true)
-                }
-            }
-            scene.onKeyReleased = EventHandler { event ->
-                when (event.code) {
-                    KeyCode.UP -> emulator.controller.setButtonState(Controller.Buttons.Up, false)
-                    KeyCode.DOWN -> emulator.controller.setButtonState(Controller.Buttons.Down, false)
-                    KeyCode.LEFT -> emulator.controller.setButtonState(Controller.Buttons.Left, false)
-                    KeyCode.RIGHT -> emulator.controller.setButtonState(Controller.Buttons.Right, false)
-                    KeyCode.Z -> emulator.controller.setButtonState(Controller.Buttons.A, false)
-                    KeyCode.X -> emulator.controller.setButtonState(Controller.Buttons.B, false)
-                    KeyCode.Q -> emulator.controller.setButtonState(Controller.Buttons.Start, false)
-                    KeyCode.W -> emulator.controller.setButtonState(Controller.Buttons.Select, false)
-                }
-            }
+    fun start() {
+        // Use system-default look and feel.
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
 
-            show()
+        // Disable lightweight popup because our panel is heavy weight.
+        JPopupMenu.setDefaultLightWeightPopupEnabled(false)
+
+        // Disable OpenGL and enable Direct3D is the only way Direct3D renderer can work.
+        // The OpenGL renderer doesn't seem to care if it is disabled. It works just fine.
+        System.setProperty("sun.java2d.opengl", "false")
+        System.setProperty("sun.java2d.d3d", "true")
+
+        var rom: File? = selectROM()
+        var emulator: Emulator
+
+        if (rom != null) {
+            emulator = Emulator(rom!!.toPath())
+
+            println("emulator created")
+
+            initUI(emulator)
         }
-
-        object: AnimationTimer() {
-            override fun handle(now: Long) {
-                val pixelWriter = canvas.graphicsContext2D.pixelWriter
-                val pixelFormat = PixelFormat.getByteRgbInstance()
-
-                pixelWriter.setPixels(0, 0, gameWidth, gameHeight, pixelFormat, nextFrame, 0, gameWidth * 3)
-            }
-        }.start()
-
-        Thread {
-            with(emulator) {
-                start()
-
-                while(true) {
-                    val startTime = System.currentTimeMillis()
-                    stepSeconds()
-                    val endTime = System.currentTimeMillis()
-
-                    var sleepTime: Long = (((1000.0) / 51.5) - (endTime - startTime)).toLong()
-
-                    sleepTime = max(sleepTime, 0)
-
-                    Thread.sleep(sleepTime)
-                }
-            }
-        }.start()
     }
 
-    override fun frameUpdate(frame: IntArray) {
-        emulator.evenOdd = !emulator.evenOdd
+    fun selectROM(): File? {
+        var selectedFile: File? = null
 
-        var i = 0
+        // We use this Semaphore to wait until the user selects a ROM.
+        val selectLock = Semaphore(1)
 
-        for (pixel in frame) {
-            val r = (pixel shr 16).toByte()
-            val g = (pixel shr 8).toByte()
-            val b = pixel.toByte()
+        // Create the frame.
+        val dialog = object : JFrame("kotNES") {
+            init {
+                // Layout of the Frame.
+                title = "kotNES"
+                size = Dimension(gameWidth * 2, gameHeight * 2)
+                layout = BorderLayout()
 
-            nextFrame[i] = r
-            nextFrame[i+1] = g
-            nextFrame[i+2] = b
-
-            i += 3
+                // Stop the waiting if the window is closed.
+                // #action stop waiting on window close
+                addWindowListener(object : WindowAdapter() {
+                    override fun windowClosed(e: WindowEvent) {
+                        selectLock.release()
+                    }
+                })
+            }
         }
-        //nextFrame = frame
-    }
-}
+        selectLock.acquireUninterruptibly()
 
-interface FrameListener {
-    fun frameUpdate(frame: IntArray)
+        val acceptor = object : FileFilter() {
+            /**
+             * {@inheritDoc}
+             */
+            override fun getDescription(): String {
+                return "NES ROM (*.nes, *.NES, *.rom)"
+            }
+
+            /**
+             * {@inheritDoc}
+             */
+            override fun accept(f: File): Boolean {
+                if (f.isDirectory) return true
+                val name = f.name
+                return name.endsWith(".nes") || name.endsWith(".NES") || name.endsWith(".rom")
+            }
+        }
+
+        dialog.jMenuBar = object : JMenuBar() { init {
+            add(object : JMenu("File") { init {
+                add(object : JMenuItem("Open") { init {
+                    addActionListener {
+                        var chooser = JFileChooser()
+                        chooser.dialogTitle = "Choose a game..."
+                        chooser.isVisible = true
+                        chooser.fileFilter = acceptor
+                        chooser.currentDirectory = File(".")
+                        chooser.dialogType = JFileChooser.OPEN_DIALOG
+
+                        if (chooser.showDialog(dialog, "Load") == JFileChooser.APPROVE_OPTION) {
+                            selectedFile = chooser.selectedFile
+                            selectLock.release()
+                            dialog.dispose()
+                        }
+                    }
+                }})
+            }})
+        }}
+        dialog.isVisible = true
+        dialog.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        selectLock.acquireUninterruptibly()
+
+        return selectedFile
+    }
+
+    fun initUI(emulator: Emulator) {
+        var display = HeavyDisplayPanel(emulator)
+        emulator.display = display
+        var disp = JFrame("kotNES - ${emulator.cartridge.filePath.fileName}")
+
+        display.addKeyListener(object : KeyAdapter() {
+            private fun toggle(e: KeyEvent, to: Boolean) {
+                when (e.keyCode) {
+                    KeyEvent.VK_UP -> emulator.controller.setButtonState(Controller.Buttons.Up, to)
+                    KeyEvent.VK_DOWN -> emulator.controller.setButtonState(Controller.Buttons.Down, to)
+                    KeyEvent.VK_LEFT -> emulator.controller.setButtonState(Controller.Buttons.Left, to)
+                    KeyEvent.VK_RIGHT -> emulator.controller.setButtonState(Controller.Buttons.Right, to)
+                    KeyEvent.VK_X -> emulator.controller.setButtonState(Controller.Buttons.A, to)
+                    KeyEvent.VK_Z -> emulator.controller.setButtonState(Controller.Buttons.B, to)
+                    KeyEvent.VK_ENTER -> emulator.controller.setButtonState(Controller.Buttons.Start, to)
+                    KeyEvent.VK_S -> emulator.controller.setButtonState(Controller.Buttons.Select, to)
+                }
+            }
+
+            override fun keyPressed(e: KeyEvent) {
+                toggle(e, true)
+            }
+
+            override fun keyReleased(e: KeyEvent) {
+                toggle(e, false)
+            }
+        })
+
+        display.addMouseListener(object : MouseAdapter() {
+            override fun mouseReleased(e: MouseEvent?) {
+                // Only show meny on right click.
+                if (!SwingUtilities.isRightMouseButton(e))
+                    return
+
+                // Create the menu.
+                val menu = JPopupMenu()
+
+                // Add renderer switching.
+                menu.add(object : JMenu("Renderer") {
+                    init {
+                        // A button group for our radio buttons.
+                        val group = ButtonGroup()
+
+                        // Loop over renderers.
+                        for (renderer in emulator.ppu.renderers) {
+                            // Get the menu radio item for each renderer.
+                            val menuItem = renderer.getRadioMenuItem(emulator.ppu)
+
+                            // Add the radio button to the group so they are exclusive.
+                            group.add(menuItem)
+
+                            // Make the current renderer selected.
+                            if (renderer === emulator.ppu.currentRenderer)
+                                group.setSelected(menuItem.model, true)
+
+                            add(menuItem)
+                        }
+                    }
+                })
+
+                menu.show(e?.component, e!!.x, e.y)
+            }
+        })
+
+        SwingUtilities.invokeLater {
+            disp.contentPane = display
+            disp.pack()
+            disp.isResizable = false
+            disp.setLocationRelativeTo(null)
+            disp.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+            disp.isVisible = true
+            display.requestFocus()
+            emulator.ppu.initRenderer()
+            if (emulator.codeExecutionThread.state == Thread.State.NEW)
+                emulator.codeExecutionThread.start()
+        }
+
+        // Print debug information.
+        System.err.println(emulator.cartridge.filePath.fileName.toString())
+        System.err.println(emulator.cartridge)
+        System.out.flush()
+    }
 }
