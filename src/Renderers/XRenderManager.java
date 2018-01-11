@@ -1,5 +1,7 @@
 package Renderers;
 
+import kotNES.PPU;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.peer.ComponentPeer;
@@ -158,5 +160,21 @@ public class XRenderManager implements IRenderManager
         {
             return "GLX";
         }
+    }
+
+    @Override
+    public JRadioButtonMenuItem getRadioMenuItem(PPU ppu)
+    {
+        return new JRadioButtonMenuItem(backing.getName())
+        {
+            {
+                // #action on click of the menu item
+                addActionListener((x) ->
+                {
+                    System.err.println("Switched to " + backing.getName() + " renderer.");
+                    ppu.setCurrentRenderer(XRenderManager.this);
+                });
+            }
+        };
     }
 }

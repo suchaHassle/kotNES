@@ -1,5 +1,7 @@
 package Renderers;
 
+import kotNES.PPU;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.peer.ComponentPeer;
@@ -45,5 +47,26 @@ public class FallbackRenderManager implements IRenderManager
     public void update()
     {
         // There is nothing needed to do when switching.
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JRadioButtonMenuItem getRadioMenuItem(PPU ppu)
+    {
+        return new JRadioButtonMenuItem("???")
+        {
+            {
+                // Switch to this renderer on click of its menu item.
+                // #action on click of the menu item
+                addActionListener((x) ->
+                {
+                    System.err.println("Switched to fallback renderer.");
+                    ppu.setCurrentRenderer(FallbackRenderManager.this);
+                    ppu.getCurrentRenderer().update();
+                });
+            }
+        };
     }
 }

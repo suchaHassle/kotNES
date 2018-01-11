@@ -2,11 +2,12 @@ package kotNES
 
 import toUnsignedInt
 import java.io.FileInputStream
+import java.nio.file.Path
 
-class Cartridge(filePath: String) {
+class Cartridge(var filePath: Path) {
     private val MAGIC_HEADER = 0x1A53454E
 
-    private var stream = FileInputStream(filePath)
+    private var stream = FileInputStream(filePath.toFile())
     var data = ByteArray(stream.available())
 
     val prgROMSize: Int
@@ -20,11 +21,10 @@ class Cartridge(filePath: String) {
     val mirroringMode: Int
 
     var prgROM: IntArray
-    lateinit var chrROM: IntArray
+    var chrROM: IntArray
     var prgRam = IntArray(0x2000)
 
     class InvalidROM(override var message: String) : Exception()
-    class NoCHRRomException(override var message: String) : Exception()
 
     init {
         // Parse Header

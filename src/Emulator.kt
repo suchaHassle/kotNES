@@ -2,15 +2,19 @@ package kotNES
 
 import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
+import java.lang.Long.max
+import java.nio.file.Path
 
-class Emulator {
-    var cartridge = Cartridge("roms/games/smb.nes")
+class Emulator(path: Path) {
+    var cartridge = Cartridge(path)
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
     var controller = Controller()
     var mapper: Mapper
     var evenOdd: Boolean = false
+    val codeExecutionThread = Thread(Runnable { this.start() })
+    lateinit var display: HeavyDisplayPanel
 
     init {
         when (cartridge.mapper) {
@@ -23,6 +27,18 @@ class Emulator {
     fun start() {
         cpu.reset()
         ppu.reset()
+
+        while (true) {
+            val startTime = System.currentTimeMillis()
+            stepSeconds()
+            val endTime = System.currentTimeMillis()
+
+            var sleepTime: Long = (((1000.0) / 53) - (endTime - startTime)).toLong()
+            if (sleepTime < 0) println(sleepTime)
+            sleepTime = max(sleepTime, 0)
+
+            Thread.sleep(sleepTime)
+        }
     }
 
     fun stepSeconds() {
@@ -37,10 +53,6 @@ class Emulator {
             ppu.step()
             mapper.step()
         }
-    }
-
-    fun addFrameListener(frameListener: FrameListener) {
-        ppu.addFrameListener(frameListener)
     }
 
     class UnsupportedMapper(s: String) : Throwable(s)

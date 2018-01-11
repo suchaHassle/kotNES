@@ -1,5 +1,6 @@
 package Renderers;
 
+import kotNES.PPU;
 import sun.java2d.SunGraphics2D;
 import sun.java2d.SurfaceData;
 
@@ -9,7 +10,7 @@ import java.awt.peer.ComponentPeer;
 import java.lang.reflect.Method;
 
 /**
- * An basic implementation of {@link nitrous.renderer.IRenderManager} that
+ * An basic implementation of {@link Renderers.IRenderManager} that
  * works for most situations involving renderers that Java support.
  *
  * @author Quantum
@@ -162,5 +163,27 @@ public abstract class AbstractRenderManager implements IRenderManager
         }
         // Return the cached Graphics2D.
         return graphics2D;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public JRadioButtonMenuItem getRadioMenuItem(PPU ppu)
+    {
+        // Create a radio menu item with the name
+        return new JRadioButtonMenuItem(getName())
+        {
+            {
+                // On click, we do switch renderer and call its update() method.
+                // #action on click of the menu item
+                addActionListener((x) ->
+                {
+                    System.err.println("Switched to " + AbstractRenderManager.this.getName() + " renderer.");
+                    ppu.setCurrentRenderer(AbstractRenderManager.this);
+                    ppu.getCurrentRenderer().update();
+                });
+            }
+        };
     }
 }
