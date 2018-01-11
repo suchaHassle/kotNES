@@ -25,6 +25,8 @@ class CPU(var memory: CpuMemory) {
             return 1
         }
 
+        val initCycle = cycles
+
         for (i in 0..1)
             if (interrupts[i]) {
                 pushWord(registers.PC)
@@ -34,7 +36,6 @@ class CPU(var memory: CpuMemory) {
                 interrupts[i] = false
             }
 
-        val initCycle = cycles
         opcode = memory[registers.PC]
         registers.P = statusFlags.asByte()
         opcodes.pageCrossed = false

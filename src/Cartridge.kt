@@ -52,21 +52,20 @@ class Cartridge(filePath: String) {
 
         if (chrROMSize != 0) chrROM = data.copyOfRange(prgOffset + prgROMSize, prgOffset +
                 prgROMSize + chrROMSize).map { it.toUnsignedInt() }.toIntArray()
+        else chrROM = IntArray(0x2000)
     }
 
     fun readPRGRom(address: Int): Int = prgROM[address]
 
     fun readPRGRam(address: Int): Int = prgRam[address]
 
-    fun readCHRRom(address: Int): Int = when {
-        chrROMSize != 0 -> chrROM[address] and 0xFF
-        else -> throw NoCHRRomException("There's no CHR ROM")
+    fun readCHRRom(address: Int): Int = chrROM[address] and 0xFF
+
+    fun writeCHRRom(address: Int, value: Int) {
+        chrROM[address] = value
     }
 
-    fun writeCHRRom(address: Int, value: Int) { chrROM[address] = value }
-
     fun writePRGRam(address: Int, value: Int) { prgRam[address] = value }
-
 
     override fun toString(): String = "ROM Size: ${prgROM.size}, VROM Size: ${chrROM.size}\nMapper: $mapper"
 }

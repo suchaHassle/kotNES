@@ -4,7 +4,7 @@ import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
 
 class Emulator {
-    var cartridge = Cartridge("roms/smb3.nes")
+    var cartridge = Cartridge("roms/games/smb.nes")
     var memory = CpuMemory(this)
     var cpu = CPU(memory)
     var ppu = PPU(this)
@@ -43,5 +43,5 @@ class Emulator {
         ppu.addFrameListener(frameListener)
     }
 
-    class UnsupportedMapper(s: String) : Exception()
+    class UnsupportedMapper(s: String) : Throwable(s)
 }

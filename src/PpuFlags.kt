@@ -27,7 +27,6 @@ data class PpuFlags (
         var spriteZeroHit: Boolean = false,
         var vBlankStarted: Boolean = false,
         var writeToggle: Boolean = false,
-        var nmiPrevious: Boolean = false,
 
         // PPUDATA
         private var readBuffer: Int = 0,
@@ -44,7 +43,7 @@ data class PpuFlags (
     var V: Int // 15 Bits
         get() = _V
         set(value) {
-            _V = value and 0xFFFF
+            _V = value and 0x7FFF
         }
 
     var oamAddress: Int

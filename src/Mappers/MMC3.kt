@@ -12,14 +12,13 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
     private var prgRomMode: Boolean = false
     private var chrRomMode: Boolean = false
     private var prgRamEnable: Boolean = false
-    private var prgRamProtect: Boolean = false
     private var bankRegisters = IntArray(8)
     private var chrBankOffsets = IntArray(8)
     private var prgBankOffsets: IntArray = intArrayOf(0, 0x2000, lastBankOffset, lastBankOffset + 0x2000)
 
     override fun read(address: Int): Int = when {
         address in 0x0000..0x1FFF -> emulator.cartridge.readCHRRom(chrBankOffsets[address / 0x400] + (address % 0x400))
-        address in 0x6000..0x7FFF -> if (prgRamEnable) emulator.cartridge.readPRGRam(address - 0x6000) else 0
+        address in 0x6000..0x7FFF -> emulator.cartridge.readPRGRam(address - 0x6000)
         address in 0x8000..0xFFFF -> emulator.cartridge.readPRGRom(prgBankOffsets[(address - 0x8000) / 0x2000] + (address % 0x2000))
         else -> throw IndexOutOfBoundsException("$address is out of bounds")
     }
@@ -29,36 +28,31 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
 
         when (address) {
             in 0x0000..0x2000 -> emulator.cartridge.writeCHRRom(chrBankOffsets[address / 0x400] + (address % 0x400), value)
-            in 0x6000..0x7FFF -> if (!prgRamProtect) emulator.cartridge.writePRGRam(address - 0x6000, value)
-            in 0x8000..0x9FFF -> if (even) writeBankSelectReg(value) else writeBankDataReg(value)
-            in 0xA000..0xBFFF -> if (even) writeMirroringReg(value) else writePrgRamProtectReg(value)
+            in 0x6000..0x7FFF -> if (prgRamEnable) emulator.cartridge.writePRGRam(address - 0x6000, value)
+            in 0x8000..0x9FFF -> if (even) writeBankSelect(value) else writeBankData(value)
+            in 0xA000..0xBFFF -> if (even) writeMirror(value) else prgRamEnable = value and 0xC0 == 0x80
             in 0xC000..0xDFFF -> if (even) irqCounterReload = value and 0xFF else irqCounter = 0
             in 0xE000..0xFFFF -> irqEnabled = !even
         }
     }
 
-    private fun writeBankSelectReg(value: Int) {
+    private fun writeBankSelect(value: Int) {
         bank = value and 7
         prgRomMode = ((value shr 6) and 0x01) != 0
         chrRomMode = ((value shr 7) and 0x01) != 0
         updateBankOffsets()
     }
 
-    private fun writeBankDataReg(value: Int) {
+    private fun writeBankData(value: Int) {
         bankRegisters[bank] = value and 0xFF
         updateBankOffsets()
     }
 
-    private fun writeMirroringReg(value: Int) {
+    private fun writeMirror(value: Int) {
         when (value and 1) {
             0 -> mirroringType = VramMirroring.Vertical
             1 -> mirroringType = VramMirroring.Horizontal
         }
-    }
-
-    private fun writePrgRamProtectReg(value: Int) {
-        prgRamEnable = ((value shr 7) and 0x01) != 0
-        prgRamProtect = ((value shr 6) and 0x01) != 0
     }
 
     private fun clock() {
@@ -73,7 +67,7 @@ class MMC3(emulator: Emulator) : Mapper(emulator) {
         val scanline = emulator.ppu.scanline
         val cycle = emulator.ppu.cycle
 
-        if (emulator.ppu.renderingEnabled && cycle == 260 && scanline in 0..239) clock()
+        if (emulator.ppu.renderingEnabled && cycle == 315 && scanline in 0..239) clock()
     }
 
     private fun updateBankOffsets() {

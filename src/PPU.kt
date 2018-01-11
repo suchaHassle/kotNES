@@ -15,8 +15,8 @@ class PPU(private var emulator: Emulator) {
     var spritePriorities = IntArray(8)
     var spriteIndexes = IntArray(8)
     var tileShiftRegister: Long = 0
-    var cycle = 0
-    var scanline = 0
+    var cycle = 340
+    var scanline = 240
     var renderingEnabled: Boolean = false
 
 
@@ -52,12 +52,6 @@ class PPU(private var emulator: Emulator) {
         val visibleCycle = cycle in 1..256
         val fetchCycle = prefetchCycle || visibleCycle
 
-        if (preLine && cycle == 1) {
-            ppuFlags.vBlankStarted = false
-            ppuFlags.spriteZeroHit = false
-            ppuFlags.spriteOverflow = false
-        }
-
         if (renderingEnabled) {
             // Background Logic
             if (visibleLine && visibleCycle) renderPixel()
@@ -87,31 +81,40 @@ class PPU(private var emulator: Emulator) {
                 else spriteCount = 0
             }
         }
-    }
 
-    private fun tick() {
         if (scanline == 241 && cycle == 1) {
             ppuFlags.vBlankStarted = true
+            listener?.frameUpdate(bitMap)
             if (ppuFlags.nmiOutput) emulator.cpu.triggerInterrupt(CPU.Interrupts.NMI)
         }
 
+        if (preLine && cycle == 1) {
+            ppuFlags.vBlankStarted = false
+            ppuFlags.spriteZeroHit = false
+            ppuFlags.spriteOverflow = false
+        }
+    }
+
+    private fun tick() {
+        renderingEnabled = ppuFlags.showBackground || ppuFlags.showSprites
+
         if (renderingEnabled) {
             if (scanline == 261 && ppuFlags.F && cycle == 339) {
-                cycle = 0
+                //listener?.frameUpdate(bitMap)
+                cycle = -1
                 scanline = 0
                 frame++
                 ppuFlags.F = !ppuFlags.F
-                listener?.frameUpdate(bitMap)
                 return
             }
         }
 
         cycle++
         if (cycle > 340) {
-            cycle = 0
+            cycle = -1
             scanline++
             if (scanline > 261) {
-                listener?.frameUpdate(bitMap)
+                //listener?.frameUpdate(bitMap)
                 scanline = 0
                 frame++
                 ppuFlags.F = !ppuFlags.F
