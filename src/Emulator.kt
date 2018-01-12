@@ -2,6 +2,7 @@ package kotNES
 
 import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
+import kotNES.mapper.UxROM
 import java.lang.Long.max
 import java.nio.file.Path
 
@@ -19,6 +20,7 @@ class Emulator(path: Path) {
     init {
         when (cartridge.mapper) {
             0 -> mapper = NROM(this)
+            2 -> mapper = UxROM(this)
             4 -> mapper = MMC3(this)
             else -> throw UnsupportedMapper("${cartridge.mapper} mapper is not supported")
         }
@@ -33,8 +35,7 @@ class Emulator(path: Path) {
             stepSeconds()
             val endTime = System.currentTimeMillis()
 
-            var sleepTime: Long = (((1000.0) / 53) - (endTime - startTime)).toLong()
-            if (sleepTime < 0) println(sleepTime)
+            var sleepTime: Long = (((1000.0) / 51.5) - (endTime - startTime)).toLong()
             sleepTime = max(sleepTime, 0)
 
             Thread.sleep(sleepTime)
