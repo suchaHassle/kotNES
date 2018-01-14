@@ -9,7 +9,7 @@ class HeavyDisplayPanel(private var emulator: Emulator) : Panel() {
     init {
         background = Color.BLACK
 
-        val sz = Dimension(emulator.ppu.gameWidth, emulator.ppu.gameHeight)
+        val sz = Dimension(emulator.ppu.gameWidth*2, emulator.ppu.gameHeight*2)
         maximumSize = sz
         minimumSize = sz
         size = sz

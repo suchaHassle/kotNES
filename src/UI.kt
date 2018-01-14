@@ -33,9 +33,6 @@ class UI {
 
         if (rom != null) {
             emulator = Emulator(rom!!.toPath())
-
-            println("emulator created")
-
             initUI(emulator)
         }
     }
