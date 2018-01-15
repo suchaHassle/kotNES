@@ -9,8 +9,6 @@ import java.awt.image.BufferedImage
 import java.awt.peer.ComponentPeer
 import java.util.*
 import java.awt.image.DataBufferInt
-import java.io.File
-import javax.imageio.ImageIO
 
 class PPU(private var emulator: Emulator) {
     val gameWidth = 256
