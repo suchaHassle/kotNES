@@ -1,21 +1,24 @@
-package kotNES
+package kotNES.ui
 
+import kotNES.Controller
+import kotNES.Emulator
 import javax.swing.*
 import javax.swing.filechooser.FileFilter
 import java.awt.event.*
 import java.awt.*
 import java.io.File
 import java.util.concurrent.Semaphore
+import javax.imageio.ImageIO
 import javax.swing.ButtonGroup
 import javax.swing.JMenu
 import javax.swing.JPopupMenu
 import javax.swing.SwingUtilities
+import javax.swing.JSeparator
 
 private const val gameWidth = 256
 private const val gameHeight = 240
 
 class UI {
-
     fun start() {
         // Use system-default look and feel.
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName())
@@ -163,6 +166,32 @@ class UI {
                                 group.setSelected(menuItem.model, true)
 
                             add(menuItem)
+                        }
+                    }
+                })
+
+                menu.add(JSeparator())
+
+                menu.add(object : JMenuItem("Save screen as image", KeyEvent.VK_P) {
+                    init {
+                        addActionListener {
+                            var iterations = 0
+                            var screenshot = File("Screenshot.png")
+                            while (screenshot.exists()) {
+                                screenshot = File("Screenshot ($iterations).png")
+                            }
+
+                            ImageIO.write(emulator.ppu.screenBuffer, "png", screenshot)
+                        }
+                    }
+                })
+
+                menu.add(object : JMenuItem("Save screen to clipboard", KeyEvent.VK_PRINTSCREEN) {
+                    init {
+                        var clipboard = CopyImageToClipboard()
+
+                        addActionListener {
+                            clipboard.copyToClipboard(emulator.ppu.screenBuffer)
                         }
                     }
                 })

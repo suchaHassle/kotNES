@@ -1,6 +1,7 @@
 package kotNES
 
 import Renderers.IRenderManager
+import kotNES.ui.CopyImageToClipboard
 import palette
 import java.awt.Component
 import java.awt.Graphics2D
@@ -8,6 +9,8 @@ import java.awt.image.BufferedImage
 import java.awt.peer.ComponentPeer
 import java.util.*
 import java.awt.image.DataBufferInt
+import java.io.File
+import javax.imageio.ImageIO
 
 class PPU(private var emulator: Emulator) {
     val gameWidth = 256
@@ -29,7 +32,7 @@ class PPU(private var emulator: Emulator) {
     lateinit var renderers: List<IRenderManager>
     var screenBuffer = BufferedImage(gameWidth, gameHeight, BufferedImage.TYPE_INT_RGB)
 
-
+    private var clipboard = CopyImageToClipboard()
     private var attributeTableByte = 0
     private var highTileByte = 0
     private var lowTileByte = 0

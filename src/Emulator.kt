@@ -3,6 +3,7 @@ package kotNES
 import kotNES.mapper.MMC3
 import kotNES.mapper.NROM
 import kotNES.mapper.UxROM
+import kotNES.ui.HeavyDisplayPanel
 import java.lang.Long.max
 import java.nio.file.Path
 

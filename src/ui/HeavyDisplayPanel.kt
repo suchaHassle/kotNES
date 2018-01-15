@@ -1,5 +1,6 @@
-package kotNES
+package kotNES.ui
 
+import kotNES.Emulator
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Graphics
