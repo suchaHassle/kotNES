@@ -14,6 +14,8 @@ Controls are hard coded at the moment.
 * Start - Enter
 * Select - S
 * Up/Down/Left/Right - Arrow Keys
+* P - Saves screen to disk
+* PrintScr - Saves screen to clipboard (also available when you right click)
 
 ## Performance and Compatibility
 

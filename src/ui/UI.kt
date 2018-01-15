@@ -178,7 +178,7 @@ class UI {
                             var iterations = 0
                             var screenshot = File("Screenshot.png")
                             while (screenshot.exists()) {
-                                screenshot = File("Screenshot ($iterations).png")
+                                screenshot = File("Screenshot (${++iterations}).png")
                             }
 
                             ImageIO.write(emulator.ppu.screenBuffer, "png", screenshot)
