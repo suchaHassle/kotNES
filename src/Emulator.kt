@@ -6,6 +6,7 @@ import kotNES.mapper.UxROM
 import kotNES.ui.HeavyDisplayPanel
 import java.lang.Long.max
 import java.nio.file.Path
+import java.util.concurrent.locks.LockSupport
 
 class Emulator(path: Path) {
     var cartridge = Cartridge(path)
@@ -39,7 +40,8 @@ class Emulator(path: Path) {
             var sleepTime: Long = (((1000.0) / 51.5) - (endTime - startTime)).toLong()
             sleepTime = max(sleepTime, 0)
 
-            Thread.sleep(sleepTime)
+            // A better alternative to Thread.sleep
+            LockSupport.parkNanos(sleepTime)
         }
     }
 
