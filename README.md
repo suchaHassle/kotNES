@@ -1,6 +1,6 @@
 # kotNES
 
-A Nintendo Entertain System Emulator written in Kotlin.
+A Nintendo Entertainment System Emulator written in Kotlin.
 
 ## Running
 
