@@ -30,7 +30,6 @@ class PPU(private var emulator: Emulator) {
     lateinit var renderers: List<IRenderManager>
     var screenBuffer = BufferedImage(gameWidth, gameHeight, BufferedImage.TYPE_INT_RGB)
 
-    private var clipboard = CopyImageToClipboard()
     private var attributeTableByte = 0
     private var highTileByte = 0
     private var lowTileByte = 0
