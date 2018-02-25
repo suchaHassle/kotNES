@@ -37,11 +37,11 @@ class Emulator(path: Path) {
             stepSeconds()
             val endTime = System.currentTimeMillis()
 
-            var sleepTime: Long = (((1000.0) / 51.5) - (endTime - startTime)).toLong()
+            var sleepTime: Long = (((1000.0) / 60.0) - (endTime - startTime)).toLong()
             sleepTime = max(sleepTime, 0)
 
             // A better alternative to Thread.sleep
-            LockSupport.parkNanos(sleepTime)
+            LockSupport.parkNanos(sleepTime * 1000000)
         }
     }
 
